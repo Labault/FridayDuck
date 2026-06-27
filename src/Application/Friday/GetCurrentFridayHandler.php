@@ -6,6 +6,8 @@ namespace App\Application\Friday;
 
 use App\Application\Visitor\RecordFridayVisit;
 use App\Application\Visitor\ResolveAnonymousVisitor;
+use App\Domain\Coffee\CoffeeContributionRepository;
+use App\Domain\Coffee\CoffeeQuota;
 use App\Domain\Friday\FridayCalendar;
 
 /**
@@ -23,6 +25,7 @@ final readonly class GetCurrentFridayHandler
         private ResolveCurrentFridayEdition $resolveCurrentFridayEdition,
         private ResolveAnonymousVisitor $resolveAnonymousVisitor,
         private RecordFridayVisit $recordFridayVisit,
+        private CoffeeContributionRepository $coffeeContributionRepository,
     ) {
     }
 
@@ -32,13 +35,22 @@ final readonly class GetCurrentFridayHandler
         $visitorResolution = $this->resolveAnonymousVisitor->resolve($visitorHash);
 
         $energy = 0;
+        $energyVersion = 0;
         $coffeeCount = 0;
+        $overcaffeinationCount = 0;
+        $remainingCoffees = CoffeeQuota::MAX_PER_VISITOR;
 
         if ($fridayState->active) {
             $edition = $this->resolveCurrentFridayEdition->resolve($fridayState->fridayDate, $fridayState->timezoneName());
             $this->recordFridayVisit->record($edition->id(), $visitorResolution->visitor->id());
+
             $energy = $edition->energy();
+            $energyVersion = $edition->energyVersion();
             $coffeeCount = $edition->coffeeCount();
+            $overcaffeinationCount = $edition->overcaffeinationCount();
+
+            $served = $this->coffeeContributionRepository->countForVisitorAndEdition($edition->id(), $visitorResolution->visitor->id());
+            $remainingCoffees = max(0, CoffeeQuota::MAX_PER_VISITOR - $served);
         }
 
         return new CurrentFridayView(
@@ -47,8 +59,11 @@ final readonly class GetCurrentFridayHandler
             timezone: $fridayState->timezoneName(),
             status: $fridayState->status->value,
             energy: $energy,
+            energyVersion: $energyVersion,
             coffeeCount: $coffeeCount,
+            overcaffeinationCount: $overcaffeinationCount,
             visitorIsNew: $visitorResolution->isNew,
+            remainingCoffees: $remainingCoffees,
         );
     }
 }

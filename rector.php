@@ -18,6 +18,7 @@ $mutableEntities = [
     __DIR__.'/src/Domain/Friday/FridayEdition.php',
     __DIR__.'/src/Domain/Visitor/AnonymousVisitor.php',
     __DIR__.'/src/Domain/Visitor/FridayVisit.php',
+    __DIR__.'/src/Domain/Coffee/CoffeeContribution.php',
 ];
 
 return RectorConfig::configure()

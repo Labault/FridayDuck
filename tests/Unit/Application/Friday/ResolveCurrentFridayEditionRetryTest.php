@@ -45,6 +45,16 @@ final class ResolveCurrentFridayEditionRetryTest extends TestCase
             {
                 throw new ConcurrentCreationException('race');
             }
+
+            public function findByFridayForUpdate(\DateTimeImmutable $fridayDate, string $timezone): ?FridayEdition
+            {
+                throw new \LogicException('Non utilisé dans ce test.');
+            }
+
+            public function save(FridayEdition $edition): void
+            {
+                throw new \LogicException('Non utilisé dans ce test.');
+            }
         };
 
         $service = new ResolveCurrentFridayEdition(

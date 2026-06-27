@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Domain\Coffee\CoffeeContribution" table="coffee_contribution">
+        <id name="id" type="string" length="26">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="fridayEditionId" column="friday_edition_id" type="string" length="26"/>
+        <field name="visitorId" column="visitor_id" type="string" length="26"/>
+        <field name="idempotencyKey" column="idempotency_key" type="string" length="255"/>
+        <field name="clientActionId" column="client_action_id" type="string" length="128"/>
+        <field name="energyBefore" column="energy_before" type="integer"/>
+        <field name="energyAfter" column="energy_after" type="integer"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <unique-constraints>
+            <unique-constraint name="uniq_coffee_contribution_idempotency" columns="idempotency_key"/>
+        </unique-constraints>
+        <indexes>
+            <index name="idx_coffee_contribution_edition_visitor" columns="friday_edition_id,visitor_id"/>
+        </indexes>
+    </entity>
+</doctrine-mapping>

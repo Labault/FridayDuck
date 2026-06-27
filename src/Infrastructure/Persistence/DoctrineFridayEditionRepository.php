@@ -8,6 +8,7 @@ use App\Domain\Friday\FridayEdition;
 use App\Domain\Friday\FridayEditionRepository;
 use App\Domain\Shared\Persistence\ConcurrentCreationException;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\LockMode;
 
 final class DoctrineFridayEditionRepository extends DoctrineRepository implements FridayEditionRepository
 {
@@ -23,6 +24,28 @@ final class DoctrineFridayEditionRepository extends DoctrineRepository implement
             ->getOneOrNullResult();
 
         return $result instanceof FridayEdition ? $result : null;
+    }
+
+    public function findByFridayForUpdate(\DateTimeImmutable $fridayDate, string $timezone): ?FridayEdition
+    {
+        $result = $this->em()
+            ->createQuery(
+                'SELECT e FROM '.FridayEdition::class.' e'
+                .' WHERE e.fridayDate = :date AND e.timezone = :timezone',
+            )
+            ->setParameter('date', $fridayDate)
+            ->setParameter('timezone', $timezone)
+            ->setLockMode(LockMode::PESSIMISTIC_WRITE)
+            ->getOneOrNullResult();
+
+        return $result instanceof FridayEdition ? $result : null;
+    }
+
+    public function save(FridayEdition $fridayEdition): void
+    {
+        $entityManager = $this->em();
+        $entityManager->persist($fridayEdition);
+        $entityManager->flush();
     }
 
     public function add(FridayEdition $fridayEdition): void

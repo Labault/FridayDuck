@@ -36,8 +36,10 @@ final class CurrentFridayEndpointTest extends DatabaseTestCase
                 'timezone' => 'Europe/Paris',
                 'status' => 'AWAKE',
                 'energy' => 0,
+                'energyVersion' => 0,
                 'coffeeCount' => 0,
-                'visitor' => ['isNew' => true],
+                'overcaffeinationCount' => 0,
+                'visitor' => ['isNew' => true, 'remainingCoffees' => 3],
             ],
             $payload,
         );
@@ -57,7 +59,7 @@ final class CurrentFridayEndpointTest extends DatabaseTestCase
 
         $payload2 = json_decode((string) $second->getContent(), true);
         self::assertIsArray($payload2);
-        self::assertSame(['isNew' => false], $payload2['visitor']);
+        self::assertSame(['isNew' => false, 'remainingCoffees' => 3], $payload2['visitor']);
 
         self::assertSame(1, $this->countRows('friday_edition'));
         self::assertSame(1, $this->countRows('anonymous_visitor'));

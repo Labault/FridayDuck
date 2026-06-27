@@ -58,6 +58,26 @@ final class FridayEdition
         );
     }
 
+    /**
+     * Enregistre UN café accepté et recalcule l'état d'énergie (§8.3/§8.4).
+     *
+     * L'énergie est une fonction DÉTERMINISTE de l'état accumulé :
+     * `energy = min(100, floor(coffeeCount / coffeeTarget * 100))`. Au-delà du
+     * plafond, l'énergie reste à 100 et chaque café supplémentaire alimente le
+     * compteur de surcaféination. `energyVersion` est incrémenté à chaque café
+     * (jeton monotone pour la couche temps réel — Phase 3).
+     *
+     * À appeler dans la transaction verrouillée (§8.2/D) : la sérialisation par
+     * verrou de ligne garantit l'absence de lost update sur le compteur.
+     */
+    public function recordCoffee(): void
+    {
+        ++$this->coffeeCount;
+        $this->energy = min(100, intdiv($this->coffeeCount * 100, $this->coffeeTarget));
+        $this->overcaffeinationCount = max(0, $this->coffeeCount - $this->coffeeTarget);
+        ++$this->energyVersion;
+    }
+
     public function id(): string
     {
         return $this->id;

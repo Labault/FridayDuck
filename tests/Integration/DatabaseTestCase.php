@@ -35,7 +35,7 @@ abstract class DatabaseTestCase extends KernelTestCase
 
         try {
             $this->connection->executeStatement(
-                'TRUNCATE friday_visit, friday_edition, anonymous_visitor RESTART IDENTITY CASCADE',
+                'TRUNCATE coffee_contribution, friday_visit, friday_edition, anonymous_visitor RESTART IDENTITY CASCADE',
             );
         } catch (\Throwable $exception) {
             self::markTestSkipped('Base de test indisponible ou non migrée : '.$exception->getMessage());
