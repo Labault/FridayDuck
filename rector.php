@@ -10,6 +10,15 @@ declare(strict_types=1);
 // so the cs and rector dry-run gates could never be green at the same time.
 
 use Rector\Config\RectorConfig;
+use Rector\Php81\Rector\Property\ReadOnlyPropertyRector;
+use Rector\Php82\Rector\Class_\ReadOnlyClassRector;
+
+// Entités du Domaine : modèles MUTABLES managés par Doctrine.
+$mutableEntities = [
+    __DIR__.'/src/Domain/Friday/FridayEdition.php',
+    __DIR__.'/src/Domain/Visitor/AnonymousVisitor.php',
+    __DIR__.'/src/Domain/Visitor/FridayVisit.php',
+];
 
 return RectorConfig::configure()
     ->withPaths([__DIR__.'/src'])
@@ -22,4 +31,11 @@ return RectorConfig::configure()
         naming: true,
         instanceOf: true,
         earlyReturn: true,
-    );
+    )
+    // FridayEdition évoluera (énergie/cafés) en Phase 2a-ii et Doctrine hydrate
+    // par réflexion : on ne fige pas ces entités en `readonly` (ni classe ni
+    // propriétés). Les autres règles (renommages, etc.) restent actives.
+    ->withSkip([
+        ReadOnlyClassRector::class => $mutableEntities,
+        ReadOnlyPropertyRector::class => $mutableEntities,
+    ]);

@@ -1,13 +1,16 @@
 {
+    "name": "labault/friday-duck",
+    "description": "Le Canard du Vendredi — un produit volontairement inutile, exécuté sérieusement.",
     "type": "project",
     "license": "proprietary",
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": ">=8.2",
+        "php": ">=8.4",
         "ext-ctype": "*",
         "ext-iconv": "*",
         "doctrine/doctrine-bundle": "^3.2",
+        "doctrine/doctrine-migrations-bundle": "^4.0",
         "doctrine/orm": "^3.6",
         "symfony/console": "7.4.*",
         "symfony/dotenv": "7.4.*",
@@ -15,6 +18,7 @@
         "symfony/framework-bundle": "7.4.*",
         "symfony/mercure-bundle": "^0.4.2",
         "symfony/messenger": "7.4.*",
+        "symfony/monolog-bundle": "^4.0",
         "symfony/runtime": "7.4.*",
         "symfony/scheduler": "7.4.*",
         "symfony/stimulus-bundle": "^3.2",
@@ -77,6 +81,7 @@
         "phpstan/phpstan": "^2.2",
         "phpunit/phpunit": "^13.2",
         "rector/rector": "^2.5",
-        "symfony/phpunit-bridge": "^8.1"
+        "symfony/phpunit-bridge": "^8.1",
+        "symfony/web-profiler-bundle": "7.4.*"
     }
 }

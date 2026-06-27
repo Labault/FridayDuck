@@ -2,7 +2,11 @@
 # Tools come from the project (vendor/bin) or your machine, never from here.
 .DEFAULT_GOAL := help
 
-.PHONY: help qa lint fix hooks cs cs-fix stan rector rector-fix test
+.PHONY: help qa lint fix hooks cs cs-fix stan rector rector-fix test \
+	up down build sh logs
+
+# Docker Compose binary (override with `make up DC="docker-compose"` if needed).
+DC ?= docker compose
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -36,3 +40,20 @@ fix: cs-fix rector-fix ## Auto-fix coding style and refactorings
 hooks: ## Install git hooks (pre-commit + commit-msg)
 	pre-commit install
 	pre-commit install --hook-type commit-msg
+
+# ── Docker (stack de développement, cf. compose.yaml) ────────────────────────
+
+up: ## Build & start the dev stack (app + database) in the background
+	$(DC) up -d --build --wait
+
+down: ## Stop the dev stack and remove containers
+	$(DC) down --remove-orphans
+
+build: ## Build the images (without starting)
+	$(DC) build
+
+sh: ## Open a shell inside the running app container
+	$(DC) exec app sh
+
+logs: ## Follow the app container logs
+	$(DC) logs -f app

@@ -1,0 +1,18 @@
+# Contexte de build minimal (image prod) — voir Dockerfile.
+.git/
+.github/
+docs/
+tests/
+var/
+vendor/
+node_modules/
+assets/
+.env
+.env.local
+.env.*.local
+.php-cs-fixer.cache
+.phpunit.cache/
+compose*.yaml
+Dockerfile
+.dockerignore
+**/.gitkeep

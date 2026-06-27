@@ -29,6 +29,12 @@ jobs:
       - name: Actionlint
         uses: raven-actions/actionlint@v2
 
+      - name: Hadolint (Dockerfile)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          config: .hadolint.yaml
+
   links:
     name: Links
     runs-on: ubuntu-latest

@@ -19,3 +19,7 @@ config:
 ignores:
   - "**/node_modules/**"
   - "**/vendor/**"
+  # Le cahier des charges est un document de RÉFÉRENCE fourni (mise en forme de
+  # l'auteur : sections en H1 « # 1. », « # 2. »…). On ne lui impose pas nos
+  # règles de style markdown.
+  - "docs/cdc_friday_duck.md"

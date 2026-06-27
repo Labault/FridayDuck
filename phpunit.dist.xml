@@ -17,9 +17,20 @@
         <server name="SHELL_VERBOSITY" value="-1" />
     </php>
 
+    <!--
+        Suites alignées sur le pipeline backend (§31.1) : unitaires vs
+        intégration. Les tests end-to-end (Playwright, §31.3) et JavaScript
+        relèvent de phases ultérieures et ne sont pas exécutés par PHPUnit.
+    -->
     <testsuites>
-        <testsuite name="Project Test Suite">
-            <directory>tests</directory>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+        <testsuite name="Functional">
+            <directory>tests/Functional</directory>
         </testsuite>
     </testsuites>
 

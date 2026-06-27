@@ -1,0 +1,68 @@
+{
+	{$CADDY_GLOBAL_OPTIONS}
+
+	frankenphp {
+		{$FRANKENPHP_CONFIG}
+	}
+}
+
+{$CADDY_EXTRA_CONFIG}
+
+{$SERVER_NAME:localhost} {
+	log {
+		{$CADDY_SERVER_LOG_OPTIONS}
+		# Masque le paramètre d'autorisation que Mercure peut ajouter à l'URL.
+		format filter {
+			request>uri query {
+				replace authorization REDACTED
+			}
+		}
+	}
+
+	root /app/public
+	encode zstd br gzip
+
+	# ── Hub Mercure CO-LOCALISÉ dans le process Caddy (§21) ──────────────────
+	# Le diagramme §21 dessine le hub à part, mais il tourne ici, dans le même
+	# binaire FrankenPHP/Caddy : AUCUN conteneur Mercure dédié.
+	mercure {
+		# Publisher : protégé par JWT (seule l'app Symfony, qui signe avec
+		# MERCURE_JWT_SECRET, peut publier).
+		publisher_jwt {env.MERCURE_PUBLISHER_JWT_KEY} {env.MERCURE_PUBLISHER_JWT_ALG}
+		# Subscriber : clé présente mais les abonnés ANONYMES sont autorisés
+		# (cookie anonyme côté visiteur, §5) — pas de JWT exigé pour s'abonner.
+		subscriber_jwt {env.MERCURE_SUBSCRIBER_JWT_KEY} {env.MERCURE_SUBSCRIBER_JWT_ALG}
+		anonymous
+		# Directives supplémentaires injectées par l'environnement
+		# (ex. cors_origins en dev).
+		{$MERCURE_EXTRA_DIRECTIVES}
+	}
+
+	{$CADDY_SERVER_EXTRA_DIRECTIVES}
+
+	# Désactive le suivi Topics s'il n'est pas explicitement activé.
+	header ?Permissions-Policy "browsing-topics=()"
+
+	@phpRoute {
+		not path /.well-known/mercure*
+		not file {path}
+	}
+	rewrite @phpRoute index.php
+
+	@frontController path index.php
+	php @frontController {
+		{$FRANKENPHP_SITE_CONFIG}
+
+		# Mode worker Symfony : le kernel est amorcé une fois et réutilisé entre
+		# les requêtes (§22.2). Support NATIF via symfony/runtime ≥ 7.4
+		# (FrankenPhpWorkerRunner) — aucun APP_RUNTIME ni paquet supplémentaire.
+		worker {
+			file ./public/index.php
+			{$FRANKENPHP_WORKER_CONFIG}
+		}
+	}
+
+	file_server {
+		hide *.php
+	}
+}

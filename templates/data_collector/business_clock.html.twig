@@ -1,0 +1,68 @@
+{% extends '@WebProfiler/Profiler/layout.html.twig' %}
+
+{% block toolbar %}
+    {% set icon %}
+        <span class="sf-toolbar-value">🦆 {{ collector.status }}</span>
+        {% if collector.simulated %}
+            <span class="sf-toolbar-status sf-toolbar-status-yellow">SIMULÉ</span>
+        {% endif %}
+    {% endset %}
+
+    {% set text %}
+        <div class="sf-toolbar-info-piece">
+            <b>Maintenant (métier)</b>
+            <span>{{ collector.now }}</span>
+        </div>
+        <div class="sf-toolbar-info-piece">
+            <b>Fuseau</b>
+            <span>{{ collector.timezone }}</span>
+        </div>
+        <div class="sf-toolbar-info-piece">
+            <b>Statut</b>
+            <span>{{ collector.status }} ({{ collector.active ? 'vendredi actif' : 'dormant' }})</span>
+        </div>
+        <div class="sf-toolbar-info-piece">
+            <b>Vendredi de l'édition</b>
+            <span>{{ collector.fridayDate }}</span>
+        </div>
+        <div class="sf-toolbar-info-piece">
+            <b>Horloge simulée</b>
+            <span>{{ collector.simulated ? 'OUI — APP_FAKE_NOW=' ~ collector.fakeNow : 'non (horloge système)' }}</span>
+        </div>
+    {% endset %}
+
+    {{ include('@WebProfiler/Profiler/toolbar_item.html.twig', { link: false }) }}
+{% endblock %}
+
+{% block menu %}
+    <span class="label">
+        <span class="icon">🦆</span>
+        <strong>Horloge métier</strong>
+    </span>
+{% endblock %}
+
+{% block panel %}
+    <h2>Horloge métier (Le Canard du Vendredi)</h2>
+    <div class="metrics">
+        <div class="metric">
+            <span class="value">{{ collector.status }}</span>
+            <span class="label">Statut</span>
+        </div>
+        <div class="metric">
+            <span class="value">{{ collector.simulated ? 'Simulée' : 'Système' }}</span>
+            <span class="label">Source de l'heure</span>
+        </div>
+    </div>
+
+    <table>
+        <tbody>
+            <tr><th>Maintenant (fuseau métier)</th><td>{{ collector.now }}</td></tr>
+            <tr><th>Fuseau métier</th><td>{{ collector.timezone }}</td></tr>
+            <tr><th>Vendredi actif ?</th><td>{{ collector.active ? 'oui' : 'non' }}</td></tr>
+            <tr><th>Vendredi de l'édition</th><td>{{ collector.fridayDate }}</td></tr>
+            <tr><th>Environnement</th><td>{{ collector.environment }}</td></tr>
+            <tr><th>APP_FAKE_NOW</th><td>{{ collector.fakeNow ?: '(vide)' }}</td></tr>
+            <tr><th>Horloge simulée</th><td>{{ collector.simulated ? 'OUI' : 'non — APP_FAKE_NOW sans effet ici' }}</td></tr>
+        </tbody>
+    </table>
+{% endblock %}

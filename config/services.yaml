@@ -7,17 +7,43 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    # Fuseau métier (§7.2) — UNIQUE point configurable. Injecté dans le Domaine
+    # via le bind $businessTimezone ci-dessous ; jamais codé en dur ailleurs.
+    app.business_timezone: 'Europe/Paris'
 
 services:
     # default configuration for services in *this* file
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            string $businessTimezone: '%app.business_timezone%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    # Horloge configurable (dev / préprod / test) : lit APP_FAKE_NOW (§7.4).
+    App\Infrastructure\Clock\ConfigurableClock:
+        arguments:
+            $systemClock: '@App\Infrastructure\Clock\SystemClock'
+            $fakeNow: '%env(string:default::APP_FAKE_NOW)%'
+            $logger: '@?logger'
+
+    # Par défaut (prod + repli) : horloge SYSTÈME → APP_FAKE_NOW SANS effet (§7.4).
+    App\Domain\Shared\Clock\ClockInterface: '@App\Infrastructure\Clock\SystemClock'
+
+# Hors production uniquement, l'horloge devient configurable : la liaison prod
+# reste SystemClock par construction (garde-fou structurel, §7.4).
+when@dev:
+    services:
+        App\Domain\Shared\Clock\ClockInterface: '@App\Infrastructure\Clock\ConfigurableClock'
+
+when@preprod:
+    services:
+        App\Domain\Shared\Clock\ClockInterface: '@App\Infrastructure\Clock\ConfigurableClock'
+
+when@test:
+    services:
+        App\Domain\Shared\Clock\ClockInterface: '@App\Infrastructure\Clock\ConfigurableClock'

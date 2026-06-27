@@ -16,4 +16,7 @@ exclude = [
 exclude_path = [
   "node_modules",
   "vendor",
+  # Document de référence fourni : ses liens externes ne relèvent pas de nos
+  # garde-fous (un lien MDN y est déjà périmé côté upstream).
+  "docs/cdc_friday_duck.md",
 ]

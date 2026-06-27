@@ -1,54 +1,81 @@
-
+# Le Canard du Vendredi — stack de DÉVELOPPEMENT.
+#
+#   make up        (docker compose up -d --build)
+#   /health        → 200 si l'app boote ET que la base répond
+#   /.well-known/mercure  → hub Mercure CO-LOCALISÉ dans le process Caddy
+#
+# Deux services seulement : `app` (FrankenPHP + Caddy + hub Mercure intégré) et
+# `database` (PostgreSQL). PAS de conteneur Mercure dédié (§21 : co-localisé).
 services:
-###> doctrine/doctrine-bundle ###
-  database:
-    image: postgres:${POSTGRES_VERSION:-16}-alpine
+  app:
+    build:
+      context: .
+      target: frankenphp_dev
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      # You should definitely change the password in production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
-    healthcheck:
-      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
-      timeout: 5s
-      retries: 5
-      start_period: 60s
+      # `app:80` expose un vhost HTTP interne (sans redirection TLS) pour la
+      # publication Mercure interne ; `localhost` sert le navigateur en HTTPS.
+      SERVER_NAME: ${SERVER_NAME:-localhost}, app:80
+      APP_ENV: ${APP_ENV:-dev}
+      # Le SERVEUR est l'unique source de vérité temporelle (§7.1). En dev,
+      # APP_FAKE_NOW gèle l'horloge métier ; À NEUTRALISER EN PROD (§7.4).
+      APP_FAKE_NOW: ${APP_FAKE_NOW:-}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:5432/${POSTGRES_DB:-app}?serverVersion=${POSTGRES_VERSION:-17}&charset=utf8
+      # URL INTERNE de publication (loopback vhost `app:80`, HTTP, pas de TLS).
+      MERCURE_URL: ${MERCURE_URL:-http://app/.well-known/mercure}
+      # URL PUBLIQUE pour le navigateur (EventSource).
+      MERCURE_PUBLIC_URL: ${MERCURE_PUBLIC_URL:-https://${SERVER_NAME:-localhost}/.well-known/mercure}
+      # Secret de signature des JWT : Symfony signe, le hub Caddy vérifie. Les
+      # trois variables partagent le même secret en dev.
+      MERCURE_JWT_SECRET: ${MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}
+      # En dev, autorise le navigateur servi en HTTPS local à s'abonner (CORS).
+      MERCURE_EXTRA_DIRECTIVES: |
+        cors_origins https://${SERVER_NAME:-localhost}
+      # Recharge à chaud du worker en dev (cf. Dockerfile frankenphp_dev).
+      FRANKENPHP_WORKER_CONFIG: watch
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
     volumes:
-      - database_data:/var/lib/postgresql/data:rw
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
-###< doctrine/doctrine-bundle ###
+      - ./:/app
+      - ./frankenphp/Caddyfile:/etc/frankenphp/Caddyfile:ro
+      - ./frankenphp/conf.d/20-app.dev.ini:/usr/local/etc/php/app.conf.d/20-app.dev.ini:ro
+      # var/ hors bind-mount pour des I/O rapides (macOS/Windows).
+      - app_var:/app/var
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTP3_PORT:-443}:443/udp"
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    tty: true
 
-###> symfony/mercure-bundle ###
-  mercure:
-    image: dunglas/mercure
+  database:
+    image: postgres:${POSTGRES_VERSION:-17}-alpine
     restart: unless-stopped
     environment:
-      # Uncomment the following line to disable HTTPS,
-      #SERVER_NAME: ':80'
-      MERCURE_PUBLISHER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
-      MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
-      # Set the URL of your Symfony project (without trailing slash!) as value of the cors_origins directive
-      MERCURE_EXTRA_DIRECTIVES: |
-        cors_origins http://127.0.0.1:8000
-    # Comment the following line to disable the development mode
-    command: /usr/bin/caddy run --config /etc/caddy/dev.Caddyfile
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      # À changer en production (utiliser des secrets, jamais committés).
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
     healthcheck:
-      test: ["CMD", "curl", "-f", "https://localhost/healthz"]
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
+      interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 60s
+      start_period: 30s
     volumes:
-      - mercure_data:/data
-      - mercure_config:/config
-###< symfony/mercure-bundle ###
+      - database_data:/var/lib/postgresql/data:rw
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
 
 volumes:
-###> doctrine/doctrine-bundle ###
+  app_var:
+  caddy_data:
+  caddy_config:
   database_data:
-###< doctrine/doctrine-bundle ###
-
-###> symfony/mercure-bundle ###
-  mercure_data:
-  mercure_config:
-###< symfony/mercure-bundle ###

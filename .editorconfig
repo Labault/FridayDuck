@@ -28,3 +28,13 @@ indent_style = tab
 # NEON (PHPStan) is tab-indented — match the tool's own --generate-baseline output.
 [*.neon]
 indent_style = tab
+
+# Dockerfile uses tab-indented heredocs (`RUN <<-EOF`): the `<<-` form only
+# strips leading TABS, so spaces would break the build. (Upstream candidate for
+# bootstrap-web-setup.)
+[Dockerfile]
+indent_style = tab
+
+# Caddyfile follows the FrankenPHP/Caddy convention of tab indentation.
+[{Caddyfile,*.Caddyfile}]
+indent_style = tab

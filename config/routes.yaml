@@ -3,9 +3,13 @@
 # This file is the entry point to configure the routes of your app.
 # Methods with the #[Route] attribute are automatically imported.
 # See also https://symfony.com/doc/current/routing.html
-
+#
 # To list all registered routes, run the following command:
 #   bin/console debug:router
 
+# Les contrôleurs vivent dans la couche Présentation (§30), pas dans src/Controller.
 controllers:
-    resource: routing.controllers
+    resource:
+        path: ../src/Presentation/Http/Controller/
+        namespace: App\Presentation\Http\Controller
+    type: attribute

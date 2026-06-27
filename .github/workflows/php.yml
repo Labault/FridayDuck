@@ -8,41 +8,81 @@ permissions:
   contents: read
 
 jobs:
-  php:
-    name: PHP quality
+  # Pipeline backend (§31.1) : composer validate → install → formatage →
+  # PHPStan → tests unitaires → tests d'intégration → audit → migrations de test.
+  # PHP 8.5 : ALIGNÉ sur l'image FrankenPHP et l'environnement de dev (no drift).
+  backend:
+    name: Backend quality
     runs-on: ubuntu-latest
+
+    # PostgreSQL pour les tests d'intégration ET la mécanique de migration.
+    services:
+      database:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: app
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: "postgresql://app:app@127.0.0.1:5432/app?serverVersion=17&charset=utf8"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup PHP 8.4
+      - name: Setup PHP 8.5
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.4"
+          php-version: "8.5"
+          extensions: pdo_pgsql, intl, opcache, apcu, ctype, iconv
           coverage: none
           tools: composer
 
-      - name: Validate composer.json
+      - name: Validate composer.json / composer.lock
         run: composer validate --strict
 
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
-      - name: PHP-CS-Fixer (dry-run)
+      - name: PHP-CS-Fixer (formatage, dry-run)
         env:
           PHP_CS_FIXER_IGNORE_ENV: "1"
         run: vendor/bin/php-cs-fixer fix --dry-run --diff
 
-      - name: PHPStan
+      - name: PHPStan (niveau 9)
         run: vendor/bin/phpstan analyse --no-progress
 
       - name: Rector (dry-run)
-        run: vendor/bin/rector process --dry-run --no-progress
+        run: vendor/bin/rector process --dry-run --no-progress-bar
 
-      - name: Tests
+      - name: Audit des dépendances
+        run: composer audit
+
+      - name: Tests unitaires
+        run: vendor/bin/phpunit --testsuite=Unit
+
+      - name: Migrations de test (base vide) + tests d'intégration
+        env:
+          APP_ENV: test
         run: |
-          if [ -f vendor/bin/pest ]; then
-            vendor/bin/pest
-          else
-            vendor/bin/phpunit
-          fi
+          php bin/console doctrine:database:create --if-not-exists --no-interaction
+          php bin/console doctrine:migrations:sync-metadata-storage --no-interaction
+          php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing --allow-no-migration
+          vendor/bin/phpunit --testsuite=Integration,Functional
+
+  # TODO(Phase 8, §31.3) : job end-to-end Playwright
+  #   - docker compose up (horloge simulée via APP_FAKE_NOW)
+  #   - npx playwright test + captures
+  #   - docker compose down (nettoyage)
+  #
+  # TODO(Phase 9, §31.5) : job déploiement + smoke test
+  #   - build de l'image prod (target frankenphp_prod, ARG APP_VERSION)
+  #   - déploiement, smoke test /health, version annotée dans Grafana, rollback
