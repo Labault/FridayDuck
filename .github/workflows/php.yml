@@ -49,6 +49,12 @@ jobs:
       - name: Validate composer.json / composer.lock
         run: composer validate --strict
 
+      # .env est ignoré par git (référence committée : .env.example). Symfony en
+      # a besoin (bootEnv + auto-scripts cache:clear). Les vraies variables CI
+      # (DATABASE_URL ci-dessus) priment sur ce fichier.
+      - name: Provide .env from .env.example
+        run: cp .env.example .env
+
       - name: Install dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
