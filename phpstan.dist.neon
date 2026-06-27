@@ -1,0 +1,9 @@
+# Managed by bootstrap. PHPStan static analysis at the strictest level (§11.7).
+includes:
+	- phpstan-baseline.neon
+
+parameters:
+	level: 9
+	paths:
+		- src
+	# Add tests/ or other dirs as needed.

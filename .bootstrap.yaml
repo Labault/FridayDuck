@@ -1,0 +1,81 @@
+# Managed by bootstrap — do not edit by hand.
+# Written by `bootstrap apply`; read by `bootstrap doctor` (Phase 2).
+profile: symfony
+bootstrap_version: 0.5.0
+bootstrap_commit: 7007652529c61c8d66aa964512fdb092daef6a1d
+applied_at: 2026-06-27T10:59:57Z
+files:
+  - path: .editorconfig
+    sha256: 6be20cd03738e22254d1e2f192865a9d501853807db1a2a658a613164d6edef2
+    tpl_sha256: 6be20cd03738e22254d1e2f192865a9d501853807db1a2a658a613164d6edef2
+  - path: .gitignore
+    sha256: 04be522cf7af12d8ecfe933ac9d6c43140e88f4e4cc220913af96c92f15617f9
+    tpl_sha256: de9a19b1255dbe2d4a5649cb6b1d76b579b0daac84226ce00d8034d2b60474e9
+    strategy: merge-gitignore
+  - path: .pre-commit-config.yaml
+    sha256: 590028e54fc8b0dfacb556ee50ad2d7b396b5398dbefe32dd5ad14c10931c988
+    tpl_sha256: 590028e54fc8b0dfacb556ee50ad2d7b396b5398dbefe32dd5ad14c10931c988
+  - path: scripts/lint-commit-msg.sh
+    sha256: 42154365d99212dfa2dd2e67810c376af694542b0c4dbb8a16aafab0f5339dec
+    tpl_sha256: 42154365d99212dfa2dd2e67810c376af694542b0c4dbb8a16aafab0f5339dec
+  - path: .gitleaks.toml
+    sha256: 6c71b73c1e2e8c13310e3d04e5cb6fca82990d4409933e14930929990a21c3ea
+    tpl_sha256: 6c71b73c1e2e8c13310e3d04e5cb6fca82990d4409933e14930929990a21c3ea
+  - path: .shellcheckrc
+    sha256: b7c65104c3500c9ab212e2dac3aef993f95057520ea446aa6fde72a44f5fc7b4
+    tpl_sha256: b7c65104c3500c9ab212e2dac3aef993f95057520ea446aa6fde72a44f5fc7b4
+  - path: .markdownlint-cli2.yaml
+    sha256: 3c9b56ebc8cf440fc847c8e40114b67ef8fa9d839c5d7d37e1b886edfefd59de
+    tpl_sha256: 3c9b56ebc8cf440fc847c8e40114b67ef8fa9d839c5d7d37e1b886edfefd59de
+  - path: lychee.toml
+    sha256: 41b147bfb6754ed93f2fcce589d5284c98d836ecc8c9b49c0241c9dfdf86e3c3
+    tpl_sha256: 41b147bfb6754ed93f2fcce589d5284c98d836ecc8c9b49c0241c9dfdf86e3c3
+  - path: Makefile
+    sha256: c2e59de19cf3ac176996c39bb0e2f704666319aa68e18eb7724859d8a993b254
+    tpl_sha256: c2e59de19cf3ac176996c39bb0e2f704666319aa68e18eb7724859d8a993b254
+  - path: SECURITY.md
+    sha256: 72715a83f54078c895f97ee68fcea1cc3696c45c1e751208e8f5c6540177b87d
+    tpl_sha256: 72715a83f54078c895f97ee68fcea1cc3696c45c1e751208e8f5c6540177b87d
+  - path: CONTRIBUTING.md
+    sha256: 57eac323f535e83d6df49cf00f4bce1251ab5f87d3ccf60b63b83beeb62cca8c
+    tpl_sha256: 57eac323f535e83d6df49cf00f4bce1251ab5f87d3ccf60b63b83beeb62cca8c
+  - path: CLAUDE.md
+    sha256: 52bc16b8e914cbc6b87f4a7c1f45ab7c0bd0c0f1ba333ddecea1d3ee5fc59aac
+    tpl_sha256: 52bc16b8e914cbc6b87f4a7c1f45ab7c0bd0c0f1ba333ddecea1d3ee5fc59aac
+  - path: .vscode/extensions.json
+    sha256: 72c2ba9ba1903393b386e23caaf5ce946f92049b5e5caa0af6dbc7484146f89e
+    tpl_sha256: 6cb54edd230eaba3393c122299e80f540211cf87fa1ba7deffdca750268b27db
+    strategy: merge-json
+  - path: .github/workflows/ci.yml
+    sha256: fa947779aef713ef6a1b3eae364bc3266aec5ccd18ac629e4264747343981c16
+    tpl_sha256: fa947779aef713ef6a1b3eae364bc3266aec5ccd18ac629e4264747343981c16
+  - path: .github/workflows/security.yml
+    sha256: 3988d194789b172f7022984c6684cefce1253dab7927f226212d4ddecdb3d1bc
+    tpl_sha256: 3988d194789b172f7022984c6684cefce1253dab7927f226212d4ddecdb3d1bc
+  - path: .github/dependabot.yml
+    sha256: f05feb69a6a51aac8d42eb42270d40f22981ba8e44305c585f0ad5ba41f21718
+    tpl_sha256: f05feb69a6a51aac8d42eb42270d40f22981ba8e44305c585f0ad5ba41f21718
+  - path: .github/PULL_REQUEST_TEMPLATE.md
+    sha256: 2480af83a65f98da22ffc43c034935bb517e7f02466cdce32e3994ef24a29c50
+    tpl_sha256: 2480af83a65f98da22ffc43c034935bb517e7f02466cdce32e3994ef24a29c50
+  - path: .github/ISSUE_TEMPLATE/bug_report.md
+    sha256: 226e90e2101485cb76911d2348d198620e984c7c6dc8b6ca5c04d2c06281e08f
+    tpl_sha256: 226e90e2101485cb76911d2348d198620e984c7c6dc8b6ca5c04d2c06281e08f
+  - path: .github/ISSUE_TEMPLATE/feature_request.md
+    sha256: 29a633be85b67a444a3eb8ed89aa853863daeaf6f10887929cf600441a149735
+    tpl_sha256: 29a633be85b67a444a3eb8ed89aa853863daeaf6f10887929cf600441a149735
+  - path: phpstan.dist.neon
+    sha256: 51cdf26b9448794fdb4d8a469e7f56abc5c7945910a3078c6e074eae9c1e1177
+    tpl_sha256: 51cdf26b9448794fdb4d8a469e7f56abc5c7945910a3078c6e074eae9c1e1177
+  - path: .php-cs-fixer.dist.php
+    sha256: aca0f747fdabc8b26cf57a26ce465bd388993c86daefb22741e54245b2753499
+    tpl_sha256: aca0f747fdabc8b26cf57a26ce465bd388993c86daefb22741e54245b2753499
+  - path: rector.php
+    sha256: 66eacdbb4a04ff15a20a8878cb4489ef5cbeaf31a1c6671fbfa736d85777f2bf
+    tpl_sha256: 66eacdbb4a04ff15a20a8878cb4489ef5cbeaf31a1c6671fbfa736d85777f2bf
+  - path: .hadolint.yaml
+    sha256: 1052fe8f112d045d4ca1fa0159ca24eeb619ab671b7c0f7e87c77c38331fa7d5
+    tpl_sha256: 1052fe8f112d045d4ca1fa0159ca24eeb619ab671b7c0f7e87c77c38331fa7d5
+  - path: .github/workflows/php.yml
+    sha256: 8084542d2ba5c073e5f05c75511bcb08aad63e0e5dc9c89de9e5de12dcc859bd
+    tpl_sha256: 8084542d2ba5c073e5f05c75511bcb08aad63e0e5dc9c89de9e5de12dcc859bd

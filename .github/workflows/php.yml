@@ -1,0 +1,48 @@
+name: PHP
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  php:
+    name: PHP quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+          tools: composer
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: PHP-CS-Fixer (dry-run)
+        env:
+          PHP_CS_FIXER_IGNORE_ENV: "1"
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff
+
+      - name: PHPStan
+        run: vendor/bin/phpstan analyse --no-progress
+
+      - name: Rector (dry-run)
+        run: vendor/bin/rector process --dry-run --no-progress
+
+      - name: Tests
+        run: |
+          if [ -f vendor/bin/pest ]; then
+            vendor/bin/pest
+          else
+            vendor/bin/phpunit
+          fi
