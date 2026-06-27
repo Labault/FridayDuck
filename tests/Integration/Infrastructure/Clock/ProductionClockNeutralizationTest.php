@@ -8,6 +8,7 @@ use App\Domain\Friday\FridayCalendar;
 use App\Infrastructure\Clock\SystemClock;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
@@ -20,6 +21,13 @@ use Symfony\Component\HttpFoundation\Request;
 #[CoversNothing]
 final class ProductionClockNeutralizationTest extends KernelTestCase
 {
+    protected function setUp(): void
+    {
+        // Compilation FRAÎCHE du conteneur prod : en debug=false, le cache n'est
+        // pas invalidé sur changement de source — on évite tout conteneur périmé.
+        (new Filesystem())->remove(\dirname(__DIR__, 4).'/var/cache/prod');
+    }
+
     public function testAppFakeNowHasNoEffectInProduction(): void
     {
         // Pré-condition : la simulation est bien présente dans l'environnement.

@@ -5,31 +5,50 @@ declare(strict_types=1);
 namespace App\Presentation\Http\Controller;
 
 use App\Application\Friday\GetCurrentFridayHandler;
+use App\Presentation\Http\Visitor\VisitorCookieResolver;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * GET /api/friday/current — état temporel courant (§24.1, version Phase 1).
+ * GET /api/friday/current — état courant (§24.1, version Phase 2a-i).
  *
- * Point d'entrée fin : délègue à l'Application, sérialise le modèle de lecture.
- * Réponse réduite { active, date, timezone, status } — calculée, jamais persistée.
+ * Point d'entrée fin : résout l'identité par cookie, délègue à l'Application
+ * (qui résout/crée l'édition et trace la visite le vendredi), sérialise. Pose le
+ * cookie d'identité s'il était absent. `active`/`status` restent issus de
+ * l'horloge ; `energy`/`coffeeCount` de l'édition persistée.
  */
 final readonly class CurrentFridayController
 {
-    public function __construct(private GetCurrentFridayHandler $getCurrentFridayHandler)
-    {
+    public function __construct(
+        private GetCurrentFridayHandler $getCurrentFridayHandler,
+        private VisitorCookieResolver $visitorCookieResolver,
+    ) {
     }
 
     #[Route('/api/friday/current', name: 'api_friday_current', methods: ['GET'])]
-    public function __invoke(): JsonResponse
+    public function __invoke(Request $request): JsonResponse
     {
-        $currentFridayView = ($this->getCurrentFridayHandler)();
+        $resolvedVisitorCookie = $this->visitorCookieResolver->readOrIssue($request);
+        $currentFridayView = ($this->getCurrentFridayHandler)($resolvedVisitorCookie->hash);
 
-        return new JsonResponse([
+        $jsonResponse = new JsonResponse([
             'active' => $currentFridayView->active,
             'date' => $currentFridayView->date,
             'timezone' => $currentFridayView->timezone,
             'status' => $currentFridayView->status,
+            'energy' => $currentFridayView->energy,
+            'coffeeCount' => $currentFridayView->coffeeCount,
+            'visitor' => [
+                'isNew' => $currentFridayView->visitorIsNew,
+            ],
         ]);
+
+        if ($resolvedVisitorCookie->issued instanceof Cookie) {
+            $jsonResponse->headers->setCookie($resolvedVisitorCookie->issued);
+        }
+
+        return $jsonResponse;
     }
 }

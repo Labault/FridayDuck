@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Domain\Visitor\AnonymousVisitor" table="anonymous_visitor">
+        <id name="id" type="string" length="26">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="anonymousIdentifierHash" column="anonymous_identifier_hash" type="string" length="64"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <field name="lastSeenAt" column="last_seen_at" type="datetime_immutable"/>
+        <field name="totalVisits" column="total_visits" type="integer"/>
+        <unique-constraints>
+            <unique-constraint name="uniq_anonymous_visitor_hash" columns="anonymous_identifier_hash"/>
+        </unique-constraints>
+    </entity>
+</doctrine-mapping>

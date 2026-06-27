@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <!-- Référence les agrégats Édition et Visiteur PAR IDENTITÉ (colonnes id) ; intégrité côté application, pas de clé étrangère ORM. -->
+    <entity name="App\Domain\Visitor\FridayVisit" table="friday_visit">
+        <id name="id" type="string" length="26">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="fridayEditionId" column="friday_edition_id" type="string" length="26"/>
+        <field name="visitorId" column="visitor_id" type="string" length="26"/>
+        <field name="firstSeenAt" column="first_seen_at" type="datetime_immutable"/>
+        <field name="lastSeenAt" column="last_seen_at" type="datetime_immutable"/>
+        <unique-constraints>
+            <unique-constraint name="uniq_friday_visit_edition_visitor" columns="friday_edition_id,visitor_id"/>
+        </unique-constraints>
+    </entity>
+</doctrine-mapping>

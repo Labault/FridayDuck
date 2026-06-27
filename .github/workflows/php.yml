@@ -75,14 +75,26 @@ jobs:
       - name: Tests unitaires
         run: vendor/bin/phpunit --testsuite=Unit
 
-      - name: Migrations de test (base vide) + tests d'intégration
+      # La base `app_test` sert les tests d'intégration.
+      - name: Migrations de test (base app_test)
         env:
           APP_ENV: test
         run: |
           php bin/console doctrine:database:create --if-not-exists --no-interaction
           php bin/console doctrine:migrations:sync-metadata-storage --no-interaction
           php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing --allow-no-migration
-          vendor/bin/phpunit --testsuite=Integration,Functional
+
+      # La base `app` (sans suffixe) sert le test de neutralisation prod, qui
+      # démarre un noyau PROD et frappe l'endpoint (lequel résout le visiteur).
+      - name: Migrations prod (base app)
+        env:
+          APP_ENV: prod
+        run: |
+          php bin/console doctrine:database:create --if-not-exists --no-interaction
+          php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing --allow-no-migration
+
+      - name: Tests d'intégration et fonctionnels
+        run: vendor/bin/phpunit --testsuite=Integration,Functional
 
   # TODO(Phase 8, §31.3) : job end-to-end Playwright
   #   - docker compose up (horloge simulée via APP_FAKE_NOW)

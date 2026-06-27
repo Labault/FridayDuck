@@ -14,14 +14,17 @@ doctrine:
             Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
         auto_mapping: true
         mappings:
-            # Doctrine is an Infrastructure detail (§21/§30): entities and ORM
-            # mappings live under src/Infrastructure/Persistence, never in the
-            # pure Domain layer. Entities are added in Phase 2 (§32).
+            # Les entités sont des modèles de DOMAINE PHP purs (§30) : aucun
+            # attribut Doctrine. Le mapping ORM est EXTERNE (XML simplifié) et
+            # vit dans l'Infrastructure — Doctrine ne « voit » le Domaine qu'à
+            # travers ces fichiers, le Domaine n'a aucune dépendance Doctrine.
             App:
-                type: attribute
+                # doctrine-bundle mappe `xml` sur le SimplifiedXmlDriver : les
+                # fichiers sont nommés relativement au préfixe (Friday.FridayEdition).
+                type: xml
                 is_bundle: false
-                dir: '%kernel.project_dir%/src/Infrastructure/Persistence'
-                prefix: 'App\Infrastructure\Persistence'
+                dir: '%kernel.project_dir%/src/Infrastructure/Persistence/mapping'
+                prefix: 'App\Domain'
                 alias: App
 
 when@test:
