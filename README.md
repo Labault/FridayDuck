@@ -70,6 +70,13 @@ auto-signé par FrankenPHP — à accepter une fois dans le navigateur).
 > stack de dev. Elles sont buildées au lancement de la suite E2E et peuvent servir
 > un ancien code. Pour voir tes changements, c'est **`https://localhost`**.
 
+**Pourquoi trois instances ?** Tout le comportement du Canard dépend de l'heure
+qu'il est (vendredi matin, vendredi après-midi, ou jour dormant). Plutôt que
+d'attendre un vrai vendredi, la suite E2E lance trois copies de l'app, chacune
+avec une horloge **gelée** sur un instant précis (`APP_FAKE_NOW`), pour couvrir
+les trois états de façon reproductible — c'est l'intérêt de l'horloge injectable
+(§7.3). Elles ne vivent que le temps d'un run et ne servent pas au dev manuel.
+
 Les ports sont surchargeables via `HTTP_PORT` / `HTTPS_PORT` / `POSTGRES_PORT`
 (voir `.env.example`).
 
@@ -91,16 +98,20 @@ Les ports sont surchargeables via `HTTP_PORT` / `HTTPS_PORT` / `POSTGRES_PORT`
 > développement, un vendredi peut être simulé via `APP_FAKE_NOW` (voir
 > `.env.example` et §7.4). Cette variable doit être **neutralisée en production**.
 >
-> **Worker FrankenPHP :** le kernel (routeur compris) est chargé une fois au boot
-> et gardé en mémoire. Après un changement de route ou de config compilée, un
-> `make down && make up` est nécessaire pour que le worker reparte à neuf — éditer
-> le code seul ne suffit pas.
+> **Dev vs E2E/prod — où vit le code :** en dev, le code est **bind-monté**
+> (`./:/app`) et le worker FrankenPHP tourne en mode *watch* → il redémarre à
+> chaud dès qu'un fichier change, donc tes modifs (routes incluses) sont prises en
+> compte **sans rien relancer**. En E2E et en prod, le code est **baké dans
+> l'image** au build : éditer une source ne change rien tant que l'image n'est pas
+> reconstruite (E2E : `npm run e2e:up` ; prod : redéploiement). Détails dans le
+> [guide technique](docs/guide-technique.md).
 
 ## Documentation
 
 | Document                                                 | Contenu                                            |
 | -------------------------------------------------------- | -------------------------------------------------- |
 | [Cahier des charges](docs/cdc_friday_duck.md)            | Référence fonctionnelle et technique complète      |
+| [Guide technique](docs/guide-technique.md)               | Environnements (dev/E2E/prod), temps réel, horloge |
 | [Produit](docs/product.md)                               | Concept, parcours, règles métier                   |
 | [Architecture](docs/architecture.md)                     | Couches, frontières, pipeline backend              |
 | [Système d'animation](docs/animation-system.md)          | Theatre.js, Stimulus, priorités d'animation        |
