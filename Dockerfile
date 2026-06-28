@@ -160,6 +160,29 @@ RUN <<-EOF
 	sync
 EOF
 
+# ─── Durcissement : exécution non-root (Phase 9) ─────────────────────────────
+# `www-data` (uid 33) existe déjà dans le socle PHP et est DÉJÀ référencé par
+# opcache.preload_user (20-app.prod.ini) : compte de service tout trouvé.
+#
+# Le binaire frankenphp embarque une file-capability `cap_net_bind_service=ep`.
+# Sous `cap_drop: ALL` + `no-new-privileges` (compose.prod.yaml), le noyau REFUSE
+# d'exécuter un binaire porteur d'une capability EFFECTIVE (EPERM à l'exec). On la
+# RETIRE donc (`setcap -r`) : zéro capability, le bind du port privilégié :80
+# repose UNIQUEMENT sur le sysctl net.ipv4.ip_unprivileged_port_start. (« Pas de
+# setcap » visait l'AJOUT d'une cap ; ici on en SUPPRIME une — même intention :
+# aucune capability sur l'app.)
+RUN setcap -r /usr/local/bin/frankenphp
+
+# Chemins écrits au RUNTIME par les services SANS read-only (worker, relay) :
+#   var/share — pool cache.app (FilesystemAdapter, ex. Scheduler) ;
+#   var/log   — inutilisé en prod (logs → stderr), aligné par sûreté.
+# var/cache reste root + lecture seule (cache chaud baké, immuable par design).
+# Le service `app` (read-only) reçoit var/share, /data et /config en tmpfs
+# inscriptibles (mode=1777) — cf. compose.prod.yaml.
+RUN chown -R www-data:www-data var/log var/share
+
+USER www-data
+
 # Version exposée (/health, Grafana). PLACÉE EN DERNIER À DESSEIN : elle change à
 # chaque commit ; la garder ici évite d'invalider les couches coûteuses (vendors,
 # code, cache) à chaque déploiement. Lue au RUNTIME, non requise par le build.

@@ -93,6 +93,33 @@ services:
     networks:
       - web
       - internal
+    # ── Durcissement runtime (Phase 9) : non-root + FS racine en lecture seule ──
+    # L'image tourne déjà en www-data (cf. Dockerfile). Ici on verrouille le FS.
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - "no-new-privileges:true"
+    # :80 est un port privilégié. En non-root, on abaisse le seuil des ports non
+    # privilégiés À 80 dans le SEUL netns du conteneur (sysctl namespacé, autorisé
+    # par Docker par défaut). ZÉRO capability, pas de setcap. Le port et le schéma
+    # joints par le Caddy global (reverse_proxy duck_app:80, HTTP) sont INCHANGÉS.
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: 80
+    # tmpfs UNIQUEMENT sur les chemins réellement écrits au runtime :
+    #   /tmp          — temp PHP/FrankenPHP ;
+    #   /data /config — autosave Caddy/FrankenPHP (écrit MÊME sans TLS) ;
+    #   /app/var/share — pool cache.app (FilesystemAdapter).
+    # PAS de tmpfs sur var/cache : il masquerait le cache chaud baké (boot KO).
+    # mode=1777 OBLIGATOIRE : ces chemins préexistent dans l'image (root:root 0755)
+    # et un tmpfs HÉRITE des droits du point de montage tout en restant root:root —
+    # sans 1777, www-data ne pourrait pas y écrire (mkdir /data/caddy → EPERM).
+    # /tmp est déjà 1777 dans l'image, il n'a pas besoin de l'option.
+    tmpfs:
+      - /tmp
+      - /data:mode=1777
+      - /config:mode=1777
+      - /app/var/share:mode=1777
 
   worker:
     image: *app-image
