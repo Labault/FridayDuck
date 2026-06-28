@@ -22,7 +22,7 @@ export default class extends Controller<HTMLElement> {
     mercureUrl: String,
   };
 
-  static targets = ['button', 'message', 'card', 'stamp', 'copyFeedback'];
+  static targets = ['button', 'message', 'card', 'stamp', 'copyFeedback', 'copyButton'];
 
   declare readonly textValue: string;
   declare readonly reactionsValue: ReactionCounts;
@@ -41,6 +41,8 @@ export default class extends Controller<HTMLElement> {
   declare readonly stampTarget: HTMLElement;
   declare readonly hasCopyFeedbackTarget: boolean;
   declare readonly copyFeedbackTarget: HTMLElement;
+  declare readonly hasCopyButtonTarget: boolean;
+  declare readonly copyButtonTarget: HTMLElement;
 
   private readonly barrier = new SequenceBarrier();
   private readonly reducedQuery = matchMedia('(prefers-reduced-motion: reduce)');
@@ -127,9 +129,39 @@ export default class extends Controller<HTMLElement> {
     try {
       await navigator.clipboard.writeText(this.textValue);
       this.copyFeedback('Conseil copié ✓');
+      this.flashCopied();
     } catch {
       this.copyFeedback('Copie indisponible');
     }
+  }
+
+  /**
+   * Confirmation visuelle sur le bouton lui-même : pop, presse-papier → coche,
+   * libellé « Copié ! », puis retour à l'état initial. Sans animation en
+   * reduced-motion, mais la bascule visuelle reste (§28.1).
+   */
+  private flashCopied(): void {
+    if (!this.hasCopyButtonTarget) {
+      return;
+    }
+    const button = this.copyButtonTarget;
+    const label = button.querySelector('[data-role="copy-label"]');
+    const original = label?.textContent ?? '';
+
+    button.classList.add('is-copied');
+    if (label) {
+      label.textContent = 'Copié !';
+    }
+    if (!this.reducedQuery.matches) {
+      button.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'ease-out' });
+    }
+
+    setTimeout(() => {
+      button.classList.remove('is-copied');
+      if (label) {
+        label.textContent = original;
+      }
+    }, 1600);
   }
 
   private renderCounts(animate: boolean): void {
@@ -170,13 +202,11 @@ export default class extends Controller<HTMLElement> {
     }
   }
 
+  // Confirmation pour lecteurs d'écran (aria-live) : la confirmation visuelle est
+  // portée par le bouton (flashCopied).
   private copyFeedback(text: string): void {
-    if (!this.hasCopyFeedbackTarget) {
-      return;
-    }
-    this.copyFeedbackTarget.textContent = text;
-    if (!this.reducedQuery.matches) {
-      this.copyFeedbackTarget.animate([{ opacity: 0 }, { opacity: 1 }, { opacity: 1 }, { opacity: 0 }], { duration: 1600, easing: 'ease' });
+    if (this.hasCopyFeedbackTarget) {
+      this.copyFeedbackTarget.textContent = text;
     }
   }
 

@@ -111,6 +111,10 @@ export class DuckRig {
     const halo = still ? 0 : Math.max(m.halo, m.reveal);
     this.setOpacity('duck-halo', halo * 0.5);
     this.setTransform('duck-halo', `scale(${1 + halo * 0.18})`);
+
+    // ── « Zzz » du sommeil : visibles quand l'énergie est au plus bas (dormant).
+    // L'envol est animé en CSS ; on reste visible même en reduced-motion (indicateur d'état).
+    this.setOpacity('duck-sleep', base.sleepZ);
   }
 
   private setTransform(id: string, value: string): void {

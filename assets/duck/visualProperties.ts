@@ -20,6 +20,7 @@ export type DuckVisualProperties = {
   keyboardVisible: boolean;
   terminalVisible: boolean;
   incidentParticles: number;
+  sleepZ: number;
 };
 
 /** Interpolation linéaire de `from` vers `to` selon `t` ∈ [0, 1]. */
@@ -55,5 +56,7 @@ export function resolveVisualTargets(energy: number): DuckVisualProperties {
     keyboardVisible: energy >= 51,
     terminalVisible: energy >= 71,
     incidentParticles: energy >= 91 ? Math.round((energy - 90) * 2) : 0,
+    // « Zzz » du sommeil : pleins à énergie 0 (dormant/comateux), éteints dès ~24.
+    sleepZ: 1 - easeInOut(energy / 24),
   };
 }

@@ -190,8 +190,11 @@ export default class extends Controller<HTMLElement> {
       const code = element.dataset.code ?? '';
       const option = this.tally.find((entry) => entry.code === code);
       const count = option?.voteCount ?? 0;
+      const share = percentage(count, total);
       this.text(element, '[data-role="count"]', String(count));
-      this.text(element, '[data-role="pct"]', `${percentage(count, total)} %`);
+      this.text(element, '[data-role="pct"]', `${share} %`);
+      // Barre de résultat cosmétique (§10.3) : largeur ∝ part des voix.
+      element.style.setProperty('--vote-share', String(share));
       element.classList.toggle('is-leader', leader === code);
     }
   }

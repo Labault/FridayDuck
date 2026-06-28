@@ -2,161 +2,490 @@
   id="duck-scene"
   xmlns="http://www.w3.org/2000/svg"
   viewBox="0 0 800 800"
+  preserveAspectRatio="xMidYMid meet"
   role="img"
   aria-labelledby="duck-title duck-description"
 >
   <title id="duck-title">Le canard du vendredi</title>
   <desc id="duck-description">
-    Un canard fatigué dont l'énergie augmente grâce aux cafés des visiteurs.
-    Placeholder géométrique pour le prototype Theatre.js (Phase 0).
+    Tibec, le canard développeur, assis dans son bureau : grosse tête crème, large
+    bec orange, lunettes rondes, capuche turquoise au symbole du code, pieds palmés
+    et tasse de café. Derrière lui, un triple écran, une fenêtre avec vue sur le
+    Puy de Dôme, un siège ergonomique, clavier/souris et des goodies de dev
+    (éléphant PHP, baleine Docker, manchot Linux). Endormi, des « Zzz » s'envolent.
   </desc>
 
-  <g id="scene-background"></g>
+  <!-- Palette Tibec (charte « Canard Dev ») : crème #FFF7EE · turquoise #2CB7C2
+      · corail #FF7F6A · orange bec #F4A62A · contour chaud #6B5440. -->
+  <defs>
+    <linearGradient id="grad-hoodie" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3CC4CE" />
+      <stop offset="1" stop-color="#1E9AA6" />
+    </linearGradient>
+    <linearGradient id="grad-beak" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBC15E" />
+      <stop offset="1" stop-color="#EE9620" />
+    </linearGradient>
+    <linearGradient id="grad-foot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F4A62A" />
+      <stop offset="1" stop-color="#E58A14" />
+    </linearGradient>
+    <radialGradient id="grad-head" cx="42%" cy="32%" r="74%">
+      <stop offset="0" stop-color="#FFFDF8" />
+      <stop offset="1" stop-color="#F4E6D2" />
+    </radialGradient>
+    <radialGradient id="grad-cheek" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#FF9B86" stop-opacity="0.6" />
+      <stop offset="1" stop-color="#FF9B86" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="grad-wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EEF5F6" />
+      <stop offset="1" stop-color="#E2ECEE" />
+    </linearGradient>
+    <linearGradient id="grad-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#CDEBF8" />
+      <stop offset="1" stop-color="#EAF7FB" />
+    </linearGradient>
+    <linearGradient id="grad-wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#D2A878" />
+      <stop offset="1" stop-color="#BC8E5E" />
+    </linearGradient>
+  </defs>
 
-  <g id="duck-shadow">
-    <ellipse cx="400" cy="688" rx="170" ry="26" fill="#000000" opacity="0.12" />
-  </g>
-
-  <!-- Objets secondaires, masqués par défaut (révélés à des seuils d'énergie). -->
-  <g id="terminal" opacity="0">
-    <rect x="556" y="360" width="196" height="170" rx="10" fill="#0b1622" stroke="#1f3b2e" stroke-width="3" />
-    <rect x="556" y="360" width="196" height="26" rx="10" fill="#13283b" />
-    <text x="572" y="420" font-family="monospace" font-size="20" fill="#36d27a">deploy 16:58 _</text>
-  </g>
-
-  <!-- Halo du pulse global (§18.3) : piloté par le rig, masqué au repos. -->
-  <g id="duck-halo" opacity="0">
-    <circle cx="400" cy="400" r="300" fill="#ffd23f" />
-  </g>
-
-  <g id="duck-root">
-    <g id="duck-body">
-      <ellipse cx="400" cy="510" rx="158" ry="178" fill="#ffd23f" />
-      <ellipse cx="400" cy="540" rx="104" ry="128" fill="#ffe48a" />
+  <!-- ════════════════ DÉCOR : bureau de dev (derrière le canard) ════════════════ -->
+  <g id="scene-background">
+    <!-- Mur + plinthe + sol. -->
+    <rect x="0" y="0" width="800" height="600" fill="url(#grad-wall)" />
+    <rect x="0" y="596" width="800" height="8" fill="#D6C6AE" />
+    <rect x="0" y="604" width="800" height="196" fill="#E4D6BF" />
+    <g stroke="#D3C1A4" stroke-width="2" opacity="0.6">
+      <path d="M 150 604 L 110 800" /><path d="M 360 604 L 340 800" /><path d="M 560 604 L 580 800" /><path d="M 700 604 L 740 800" />
     </g>
 
-    <g id="duck-left-wing">
-      <ellipse cx="266" cy="498" rx="52" ry="118" fill="#f4b400" />
-    </g>
-    <g id="duck-right-wing">
-      <ellipse cx="534" cy="498" rx="52" ry="118" fill="#f4b400" />
-    </g>
-
-    <g id="duck-head">
-      <circle cx="400" cy="300" r="120" fill="#ffd23f" />
-
-      <g id="duck-left-eye">
-        <circle cx="360" cy="282" r="34" fill="#ffffff" stroke="#1c1c1c" stroke-width="3" />
-        <g id="duck-left-pupil">
-          <circle cx="360" cy="288" r="14" fill="#1c1c1c" />
-        </g>
-        <g id="duck-left-eyelid">
-          <rect x="324" y="246" width="72" height="74" rx="22" fill="#ffd23f" />
-        </g>
+    <!-- Fenêtre avec vue sur le Puy de Dôme. -->
+    <g>
+      <rect x="40" y="84" width="214" height="220" rx="10" fill="#F8F5EF" stroke="#CBBDA6" stroke-width="6" />
+      <rect x="54" y="98" width="186" height="192" rx="4" fill="url(#grad-sky)" />
+      <!-- soleil doux + nuages -->
+      <circle cx="92" cy="138" r="18" fill="#FFE6A6" />
+      <ellipse cx="190" cy="132" rx="34" ry="13" fill="#FFFFFF" opacity="0.85" />
+      <ellipse cx="150" cy="160" rx="26" ry="10" fill="#FFFFFF" opacity="0.7" />
+      <!-- Chaîne des Puys en arrière-plan (collines arrondies, plus claires). -->
+      <path d="M 54 290 L 54 258 C 74 246 92 250 104 260 C 120 242 140 246 152 260 C 170 244 196 248 210 260 C 222 252 234 256 240 262 L 240 290 Z" fill="#A8CF88" />
+      <!-- Le Puy de Dôme : grand dôme arrondi volcanique, deux tons. -->
+      <path d="M 56 290 C 60 224 96 148 132 148 C 178 148 226 224 240 290 Z" fill="#8CBB66" />
+      <path d="M 132 148 C 96 148 60 224 56 290 L 132 290 Z" fill="#9DC878" />
+      <!-- Chemin panoramique en lacets sur le flanc. -->
+      <path d="M 92 284 q 44 -8 60 -36 q 10 -20 -10 -30" fill="none" stroke="#CDE0AE" stroke-width="3" stroke-linecap="round" opacity="0.85" />
+      <!-- Temple de Mercure : ruines gallo-romaines, à gauche du sommet. -->
+      <g fill="#D8CCB4" stroke="#B9A988" stroke-width="1">
+        <rect x="100" y="146" width="34" height="5" rx="1" />
+        <rect x="103" y="133" width="4" height="14" /><rect x="111" y="131" width="4" height="16" />
+        <rect x="119" y="135" width="4" height="12" /><rect x="127" y="133" width="4" height="14" />
+        <rect x="101" y="128" width="16" height="4" />
       </g>
-
-      <g id="duck-right-eye">
-        <circle cx="440" cy="282" r="34" fill="#ffffff" stroke="#1c1c1c" stroke-width="3" />
-        <g id="duck-right-pupil">
-          <circle cx="440" cy="288" r="14" fill="#1c1c1c" />
-        </g>
-        <g id="duck-right-eyelid">
-          <rect x="404" y="246" width="72" height="74" rx="22" fill="#ffd23f" />
-        </g>
+      <!-- Antenne hertzienne (TDF) au sommet, à droite du temple. -->
+      <g stroke="#6E7A86" stroke-width="2.5" stroke-linecap="round" fill="none">
+        <path d="M 150 148 L 150 104" />
+        <path d="M 143 148 L 150 122 L 157 148" />
+        <path d="M 145 138 L 155 138 M 146 128 L 154 128 M 147 118 L 153 118" />
       </g>
-
-      <g id="duck-beak">
-        <path d="M 330 352 Q 400 332 470 352 Q 452 392 400 392 Q 348 392 330 352 Z" fill="#ff8c00" />
-      </g>
-
-      <!-- Slot TÊTE : accessoires placeholder (§10.5, keyés par svg_group_id, masqués
-          par défaut). Remplacés par le dessin Inkscape réel (mêmes ids). -->
-      <g id="duck-head-accessory-slot">
-        <g class="duck-accessory" id="accessory-cto-glasses">
-          <rect x="320" y="270" width="160" height="26" rx="8" fill="#1c1c1c" />
-          <circle cx="360" cy="283" r="22" fill="#13283b" stroke="#1c1c1c" stroke-width="4" />
-          <circle cx="440" cy="283" r="22" fill="#13283b" stroke="#1c1c1c" stroke-width="4" />
-        </g>
-        <g class="duck-accessory" id="accessory-works-on-my-machine-helmet">
-          <path d="M 300 230 a 100 100 0 0 1 200 0 Z" fill="#ffb03c" stroke="#7a5a3a" stroke-width="4" />
-          <rect x="296" y="228" width="208" height="16" rx="6" fill="#e7b400" />
-        </g>
-        <g class="duck-accessory" id="accessory-kubernetes-beanie">
-          <path d="M 304 232 a 96 96 0 0 1 192 0 Z" fill="#3b6fd2" />
-          <rect x="300" y="226" width="200" height="18" rx="9" fill="#2b4f9e" />
-        </g>
-        <g class="duck-accessory" id="accessory-meeting-noise-cancelling-headset">
-          <path d="M 282 300 a 118 118 0 0 1 236 0" fill="none" stroke="#2b2f36" stroke-width="12" />
-          <rect x="266" y="286" width="34" height="56" rx="12" fill="#2b2f36" />
-          <rect x="500" y="286" width="34" height="56" rx="12" fill="#2b2f36" />
-        </g>
-      </g>
+      <circle cx="150" cy="102" r="3" fill="#E5564B" />
+      <!-- liseré d'herbe au pied. -->
+      <path d="M 54 290 C 110 278 152 282 240 290 L 240 292 L 54 292 Z" fill="#73A352" opacity="0.7" />
+      <!-- meneaux + appui -->
+      <line x1="147" y1="98" x2="147" y2="290" stroke="#F8F5EF" stroke-width="7" />
+      <line x1="54" y1="194" x2="240" y2="194" stroke="#F8F5EF" stroke-width="7" />
+      <rect x="32" y="300" width="230" height="12" rx="4" fill="#E4DAC6" />
     </g>
 
-    <!-- Slot CORPS : accessoires placeholder (suivent le corps via #duck-root). -->
-    <g id="duck-body-accessory-slot">
-      <g class="duck-accessory" id="accessory-too-serious-tie">
-        <path d="M 400 392 l 22 24 l -22 96 l -22 -96 Z" fill="#7a1f2b" />
-        <path d="M 380 392 l 20 18 l 20 -18 Z" fill="#a02a39" />
+    <!-- Bureau (plateau bois). -->
+    <rect x="120" y="300" width="660" height="52" rx="8" fill="url(#grad-wood)" />
+    <rect x="120" y="348" width="660" height="14" rx="4" fill="#A87C50" />
+
+    <!-- Triple écran posé sur le bureau. -->
+    <g>
+      <!-- pieds -->
+      <g fill="#3A3F47">
+        <rect x="318" y="288" width="20" height="20" /><rect x="296" y="300" width="64" height="10" rx="3" />
+        <rect x="492" y="284" width="20" height="24" /><rect x="470" y="300" width="64" height="10" rx="3" />
+        <rect x="660" y="288" width="20" height="20" /><rect x="638" y="300" width="64" height="10" rx="3" />
       </g>
-      <g class="duck-accessory" id="accessory-production-cape">
-        <path d="M 250 430 q 150 80 300 0 l -30 200 q -120 60 -240 0 Z" fill="#7a1f2b" opacity="0.85" />
+      <!-- écran gauche (éditeur de code) -->
+      <rect x="250" y="150" width="158" height="146" rx="8" fill="#23272E" />
+      <rect x="260" y="160" width="138" height="126" rx="4" fill="#1E2A38" />
+      <g stroke-linecap="round" stroke-width="5">
+        <path d="M 270 176 h 40" stroke="#FF7F6A" /><path d="M 318 176 h 56" stroke="#5FD0D8" />
+        <path d="M 280 192 h 70" stroke="#9DE07A" /><path d="M 270 208 h 36" stroke="#FFD98A" />
+        <path d="M 280 224 h 84" stroke="#7FB6F2" /><path d="M 270 240 h 52" stroke="#9DE07A" />
+        <path d="M 280 256 h 64" stroke="#FF7F6A" /><path d="M 270 272 h 44" stroke="#5FD0D8" />
       </g>
-      <g class="duck-accessory" id="accessory-senior-since-tuesday-badge">
-        <rect x="330" y="470" width="60" height="44" rx="8" fill="#f5f1e6" stroke="#7a5a3a" stroke-width="3" />
-        <rect x="338" y="480" width="44" height="6" rx="3" fill="#5b626d" />
-        <rect x="338" y="492" width="34" height="6" rx="3" fill="#9aa1ab" />
+      <!-- écran central (terminal) -->
+      <rect x="420" y="146" width="160" height="150" rx="8" fill="#23272E" />
+      <rect x="430" y="156" width="140" height="130" rx="4" fill="#0E1B12" />
+      <g fill="#36d27a" font-family="monospace" font-size="13">
+        <text x="440" y="178">$ git push</text>
+        <text x="440" y="198">deploy ✓</text>
+        <text x="440" y="218">friday 16:58</text>
       </g>
-      <g class="duck-accessory" id="accessory-oncall-vest">
-        <path d="M 300 430 l 40 -10 l 60 40 l 60 -40 l 40 10 l -10 220 q -90 40 -180 0 Z" fill="#f2a900" opacity="0.9" />
-        <rect x="320" y="470" width="160" height="14" fill="#e7e7e7" opacity="0.8" />
+      <path d="M 440 232 h 14" stroke="#36d27a" stroke-width="5" stroke-linecap="round" />
+      <!-- écran droit (navigateur) -->
+      <rect x="592" y="150" width="158" height="146" rx="8" fill="#23272E" />
+      <rect x="602" y="160" width="138" height="126" rx="4" fill="#F4F7FA" />
+      <rect x="602" y="160" width="138" height="20" rx="4" fill="#D9E2EA" />
+      <g fill="#FF7F6A"><circle cx="614" cy="170" r="3" /></g>
+      <g fill="#FFD98A"><circle cx="624" cy="170" r="3" /></g>
+      <g fill="#9DE07A"><circle cx="634" cy="170" r="3" /></g>
+      <g stroke-linecap="round" stroke-width="5">
+        <path d="M 612 198 h 60" stroke="#7FB6F2" /><path d="M 612 214 h 110" stroke="#D2DBE3" />
+        <path d="M 612 230 h 86" stroke="#D2DBE3" /><path d="M 612 250 h 118" stroke="#2CB7C2" />
+        <path d="M 612 266 h 70" stroke="#D2DBE3" />
       </g>
-      <g class="duck-accessory" id="accessory-friday-in-prod-scarf">
-        <path d="M 320 410 q 80 36 160 0 l 8 40 q -88 36 -176 0 Z" fill="#2e6e4f" />
-        <path d="M 460 446 l 26 90 l -28 6 l -18 -86 Z" fill="#235a40" />
+
+      <!-- Figurine Tux (manchot Linux) sur l'écran gauche. -->
+      <g transform="translate(300 96)">
+        <ellipse cx="22" cy="40" rx="22" ry="26" fill="#1c1c1c" />
+        <ellipse cx="22" cy="44" rx="13" ry="18" fill="#FFFFFF" />
+        <circle cx="22" cy="20" r="16" fill="#1c1c1c" />
+        <ellipse cx="16" cy="20" rx="4" ry="5" fill="#FFFFFF" /><ellipse cx="28" cy="20" rx="4" ry="5" fill="#FFFFFF" />
+        <circle cx="16" cy="21" r="2" fill="#1c1c1c" /><circle cx="28" cy="21" r="2" fill="#1c1c1c" />
+        <path d="M 16 27 q 6 6 12 0 q -6 4 -12 0 Z" fill="#F4A62A" />
+        <path d="M 10 64 l 14 0 l -4 8 l -14 0 Z" fill="#F4A62A" /><path d="M 24 64 l 14 0 l 4 8 l -14 0 Z" fill="#F4A62A" />
+      </g>
+
+      <!-- Figurine baleine Docker sur l'écran droit. -->
+      <g transform="translate(636 104)">
+        <path d="M 8 36 C 8 18 30 12 48 16 C 60 18 72 24 80 34 C 70 44 50 48 34 46 C 20 44 10 42 8 36 Z" fill="#2496ED" />
+        <g fill="#2bb0ff" stroke="#1f86d6" stroke-width="1.5">
+          <rect x="30" y="2" width="12" height="11" /><rect x="44" y="2" width="12" height="11" /><rect x="37" y="-10" width="12" height="11" />
+        </g>
+        <path d="M 80 34 q 12 -2 16 6 q -10 2 -16 -2 Z" fill="#2496ED" />
+        <circle cx="22" cy="30" r="3" fill="#0d3a63" />
+        <path d="M 14 46 q -8 4 -12 -2 q 8 0 12 2 Z" fill="#2496ED" />
       </g>
     </g>
-    <!-- Slot MAIN : accessoire placeholder tenu près du corps. -->
-    <g id="duck-hand-accessory-slot">
-      <g class="duck-accessory" id="accessory-tiny-extinguisher">
-        <rect x="250" y="520" width="34" height="80" rx="10" fill="#c0392b" />
-        <rect x="260" y="506" width="14" height="20" rx="4" fill="#1c1c1c" />
-        <rect x="244" y="540" width="46" height="16" rx="4" fill="#e7e7e7" />
+
+    <!-- Clavier + souris Logitech sur le plateau, à droite. -->
+    <g>
+      <rect x="516" y="312" width="176" height="40" rx="8" fill="#3A3F47" />
+      <rect x="516" y="312" width="176" height="40" rx="8" fill="#2C3036" opacity="0.4" />
+      <g fill="#23262B">
+        <rect x="526" y="320" width="14" height="9" rx="2" /><rect x="544" y="320" width="14" height="9" rx="2" />
+        <rect x="562" y="320" width="14" height="9" rx="2" /><rect x="580" y="320" width="14" height="9" rx="2" />
+        <rect x="598" y="320" width="14" height="9" rx="2" /><rect x="616" y="320" width="14" height="9" rx="2" />
+        <rect x="634" y="320" width="14" height="9" rx="2" /><rect x="652" y="320" width="14" height="9" rx="2" />
+        <rect x="670" y="320" width="12" height="9" rx="2" />
+        <rect x="540" y="334" width="120" height="10" rx="2" />
       </g>
+      <!-- souris MX -->
+      <path d="M 712 314 C 736 314 748 326 748 342 C 748 354 736 354 712 354 C 700 354 700 314 712 314 Z" fill="#3A3F47" />
+      <line x1="724" y1="318" x2="724" y2="332" stroke="#23262B" stroke-width="3" stroke-linecap="round" />
+    </g>
+
+    <!-- ElePHPant (éléphant PHP) sur le bureau, à gauche. -->
+    <g transform="translate(150 244)">
+      <ellipse cx="46" cy="70" rx="46" ry="40" fill="#8892BF" />
+      <ellipse cx="46" cy="76" rx="30" ry="26" fill="#9FA8CE" />
+      <circle cx="58" cy="34" r="30" fill="#8892BF" />
+      <path d="M 12 36 q -18 0 -16 22 q 2 14 14 12 q -2 -16 8 -22 Z" fill="#7A84B4" />
+      <path d="M 40 50 C 30 60 28 80 30 96 C 38 96 42 80 46 66 Z" fill="#8892BF" />
+      <ellipse cx="36" cy="100" rx="12" ry="8" fill="#7A84B4" /><ellipse cx="62" cy="102" rx="12" ry="8" fill="#7A84B4" />
+      <circle cx="62" cy="30" r="4" fill="#2b2f55" />
+      <path d="M 44 18 q 14 -10 30 -2" stroke="#5b6699" stroke-width="3" fill="none" stroke-linecap="round" />
+    </g>
+
+    <!-- Siège ergonomique (dossier + têtière + accoudoirs), derrière le canard. -->
+    <g>
+      <rect x="296" y="286" width="208" height="70" rx="32" fill="#4F5864" />
+      <rect x="288" y="330" width="224" height="300" rx="44" fill="#5A6470" />
+      <rect x="300" y="346" width="200" height="270" rx="34" fill="#48515C" opacity="0.55" />
+      <g stroke="#3E4651" stroke-width="2" opacity="0.5">
+        <path d="M 330 380 v 210" /><path d="M 370 380 v 220" /><path d="M 430 380 v 220" /><path d="M 470 380 v 210" />
+      </g>
+      <rect x="250" y="540" width="40" height="96" rx="18" fill="#3E4651" />
+      <rect x="510" y="540" width="40" height="96" rx="18" fill="#3E4651" />
     </g>
   </g>
 
-  <g id="coffee-cup">
-    <rect x="612" y="296" width="76" height="64" rx="8" fill="#f5f1e6" stroke="#7a5a3a" stroke-width="3" />
-    <path d="M 688 308 q 26 4 26 24 q 0 20 -26 24" fill="none" stroke="#7a5a3a" stroke-width="6" />
-    <ellipse cx="650" cy="300" rx="34" ry="9" fill="#5a3a22" />
-  </g>
-
-  <g id="coffee-steam" opacity="0.05">
-    <path d="M 636 290 q -10 -22 6 -40 q 14 -18 2 -40" fill="none" stroke="#cdbfae" stroke-width="6" stroke-linecap="round" />
-    <path d="M 664 290 q -10 -22 6 -40 q 14 -18 2 -40" fill="none" stroke="#cdbfae" stroke-width="6" stroke-linecap="round" />
-  </g>
-
-  <g id="keyboard" opacity="0">
-    <rect x="296" y="648" width="208" height="58" rx="9" fill="#2b2f36" />
-    <g fill="#5b626d">
-      <rect x="312" y="662" width="26" height="14" rx="3" />
-      <rect x="346" y="662" width="26" height="14" rx="3" />
-      <rect x="380" y="662" width="26" height="14" rx="3" />
-      <rect x="414" y="662" width="26" height="14" rx="3" />
-      <rect x="448" y="662" width="40" height="14" rx="3" />
-      <rect x="330" y="684" width="140" height="14" rx="3" />
+  <!-- ════════════════ CANARD (réduit pour laisser respirer le décor) ════════════════ -->
+  <g id="duck-stage" transform="translate(152 279) scale(0.62)">
+    <g id="duck-shadow">
+      <ellipse cx="400" cy="772" rx="186" ry="24" fill="#3b2f24" opacity="0.18" />
     </g>
-  </g>
 
-  <g id="particles" opacity="0">
-    <circle cx="250" cy="220" r="8" fill="#ff5a3c" />
-    <circle cx="560" cy="200" r="7" fill="#ffb03c" />
-    <circle cx="300" cy="120" r="6" fill="#ff5a3c" />
-    <circle cx="500" cy="140" r="9" fill="#ffb03c" />
-    <circle cx="180" cy="360" r="6" fill="#ff5a3c" />
-    <circle cx="620" cy="360" r="8" fill="#ffb03c" />
-    <circle cx="400" cy="92" r="7" fill="#ff5a3c" />
-    <circle cx="690" cy="250" r="6" fill="#ffb03c" />
+    <!-- Halo du pulse global (§18.3) : piloté par le rig, masqué au repos. -->
+    <g id="duck-halo" opacity="0">
+      <circle cx="400" cy="380" r="300" fill="#ffd98a" />
+    </g>
+
+    <g id="duck-root">
+      <!-- ── Corps : capuche turquoise (hoodie signature de Tibec). ──────────── -->
+      <g id="duck-body">
+        <!-- Capuche repliée derrière la nuque (dépasse de chaque côté du cou). -->
+        <path d="M 304 432 Q 360 408 400 414 L 400 472 Q 338 472 310 496 Z" fill="#16838E" />
+        <path d="M 496 432 Q 440 408 400 414 L 400 472 Q 462 472 490 496 Z" fill="#16838E" />
+
+        <!-- Cou crème reliant la tête au corps. -->
+        <path d="M 366 404 L 434 404 L 428 462 L 372 462 Z" fill="#F5E7D3" stroke="#6B5440" stroke-width="3" />
+
+        <!-- Torse compact (canard assis). -->
+        <path
+          d="M 400 440 C 470 440 516 466 534 512 C 552 560 550 648 540 706 C 538 720 506 728 400 728 C 294 728 262 720 260 706 C 250 648 248 560 266 512 C 284 466 330 440 400 440 Z"
+          fill="url(#grad-hoodie)" stroke="#15808B" stroke-width="4"
+        />
+        <!-- Lumière douce sur le torse. -->
+        <path d="M 312 478 C 294 542 294 630 310 700 C 282 684 270 608 276 526 C 280 498 296 482 312 478 Z" fill="#5FD0D8" opacity="0.5" />
+
+        <!-- Ourlet côtelé bas. -->
+        <path d="M 268 702 Q 400 730 532 702 L 532 722 Q 400 748 268 722 Z" fill="#16838E" />
+        <g stroke="#0F6E78" stroke-width="3" opacity="0.55">
+          <path d="M 320 708 l 0 18" /><path d="M 360 712 l 0 20" /><path d="M 400 714 l 0 20" />
+          <path d="M 440 712 l 0 20" /><path d="M 480 708 l 0 18" />
+        </g>
+
+        <!-- Col / ouverture de capuche autour du cou. -->
+        <path d="M 332 446 Q 400 496 468 446 Q 460 472 400 480 Q 340 472 332 446 Z" fill="#15808B" />
+        <path d="M 344 452 Q 400 492 456 452 Q 450 472 400 478 Q 350 472 344 452 Z" fill="#0F6E78" opacity="0.8" />
+
+        <!-- Cordons de capuche + embouts. -->
+        <path d="M 384 470 C 380 512 380 540 382 560" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" />
+        <path d="M 416 470 C 420 512 420 542 418 562" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" />
+        <circle cx="382" cy="564" r="7" fill="#F3F3EF" />
+        <circle cx="418" cy="566" r="7" fill="#F3F3EF" />
+
+        <!-- Poche kangourou + surpiqûre. -->
+        <path d="M 322 614 Q 400 646 478 614 L 470 678 Q 400 698 330 678 Z" fill="#0F6E78" opacity="0.4" />
+        <path d="M 330 618 Q 400 648 470 618" fill="none" stroke="#0F6E78" stroke-width="2.5" opacity="0.6" />
+
+        <!-- Logo </> sur la poitrine (signature). -->
+        <g fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M 372 566 L 350 590 L 372 614" />
+          <path d="M 428 566 L 450 590 L 428 614" />
+          <path d="M 414 558 L 386 622" />
+        </g>
+      </g>
+
+      <!-- ── Pieds palmés visibles (canard assis, on voit le dessous des palmes). ── -->
+      <g id="duck-feet">
+        <g stroke="#D9831A" stroke-width="3.5" stroke-linejoin="round">
+          <path d="M 352 760 C 322 758 306 740 310 720 C 314 710 390 710 394 720 C 398 740 382 758 352 760 Z" fill="url(#grad-foot)" />
+          <path d="M 448 760 C 478 758 494 740 490 720 C 486 710 410 710 406 720 C 402 740 418 758 448 760 Z" fill="url(#grad-foot)" />
+        </g>
+        <ellipse cx="352" cy="740" rx="30" ry="18" fill="#FBD89A" opacity="0.65" />
+        <ellipse cx="448" cy="740" rx="30" ry="18" fill="#FBD89A" opacity="0.65" />
+        <g stroke="#D9831A" stroke-width="3" stroke-linecap="round" opacity="0.8">
+          <path d="M 334 718 L 336 752" /><path d="M 370 718 L 368 752" />
+          <path d="M 466 718 L 464 752" /><path d="M 430 718 L 432 752" />
+        </g>
+      </g>
+
+      <!-- ── Ailes / manches (l'aile gauche tient la tasse, la droite repose). ── -->
+      <g id="duck-left-wing">
+        <path d="M 320 452 C 286 470 266 524 270 586 C 272 618 294 634 320 626 C 308 562 312 498 334 466 Z" fill="url(#grad-hoodie)" stroke="#15808B" stroke-width="4" />
+        <g fill="none" stroke="#15808B" stroke-width="2.5" opacity="0.5">
+          <path d="M 296 500 q 14 8 26 4" /><path d="M 290 536 q 14 8 28 4" /><path d="M 288 572 q 14 8 28 4" />
+        </g>
+        <path d="M 272 600 q 24 16 52 6 l -4 26 q -24 8 -44 -4 Z" fill="#16838E" />
+        <ellipse cx="298" cy="640" rx="42" ry="38" fill="#FFF7EE" stroke="#6B5440" stroke-width="3.5" />
+      </g>
+      <g id="duck-right-wing">
+        <path d="M 480 452 C 514 470 534 524 530 586 C 528 618 506 634 480 626 C 492 562 488 498 466 466 Z" fill="url(#grad-hoodie)" stroke="#15808B" stroke-width="4" />
+        <g fill="none" stroke="#15808B" stroke-width="2.5" opacity="0.5">
+          <path d="M 504 500 q -14 8 -26 4" /><path d="M 510 536 q -14 8 -28 4" /><path d="M 512 572 q -14 8 -28 4" />
+        </g>
+        <path d="M 528 600 q -24 16 -52 6 l 4 26 q 24 8 44 -4 Z" fill="#16838E" />
+        <ellipse cx="502" cy="640" rx="42" ry="38" fill="#FFF7EE" stroke="#6B5440" stroke-width="3.5" />
+        <g fill="none" stroke="#6B5440" stroke-width="2.5" opacity="0.55">
+          <path d="M 490 632 q 8 10 6 22" /><path d="M 506 630 q 6 10 4 22" />
+        </g>
+        <path d="M 520 612 q 18 -8 24 10 q 4 16 -12 20 Z" fill="#FFF7EE" stroke="#6B5440" stroke-width="3" />
+      </g>
+
+      <g id="duck-head">
+        <!-- Houppette : trois plumes rondes balayées vers l'arrière. -->
+        <g fill="url(#grad-head)" stroke="#6B5440" stroke-width="3.5" stroke-linejoin="round">
+          <path d="M 372 144 C 348 124 332 98 340 74 C 366 90 384 118 392 144 Z" />
+          <path d="M 392 140 C 384 100 392 64 410 50 C 426 84 418 116 412 142 Z" />
+          <path d="M 412 144 C 420 110 444 86 470 86 C 456 112 436 128 428 146 Z" />
+        </g>
+
+        <!-- Crâne : grosse tête ronde et lisse. -->
+        <path
+          d="M 400 120 C 306 120 238 192 238 276 C 238 362 306 422 400 424 C 494 422 562 362 562 276 C 562 192 494 120 400 120 Z"
+          fill="url(#grad-head)" stroke="#6B5440" stroke-width="4"
+        />
+        <!-- Reflet doux en haut du crâne (volume). -->
+        <ellipse cx="346" cy="188" rx="74" ry="34" fill="#FFFFFF" opacity="0.35" />
+
+        <!-- Joues rosées. -->
+        <ellipse cx="310" cy="306" rx="30" ry="21" fill="url(#grad-cheek)" />
+        <ellipse cx="490" cy="306" rx="30" ry="21" fill="url(#grad-cheek)" />
+
+        <!-- Yeux : grands, brillants (blanc + pupille ; la paupière crème ferme l'œil au clignement). -->
+        <g id="duck-left-eye">
+          <circle cx="352" cy="250" r="34" fill="#ffffff" stroke="#2F3540" stroke-width="3" />
+          <g id="duck-left-pupil">
+            <circle cx="356" cy="254" r="18" fill="#2F3540" />
+            <circle cx="364" cy="246" r="7" fill="#ffffff" />
+            <circle cx="350" cy="262" r="3.5" fill="#ffffff" opacity="0.85" />
+          </g>
+          <g id="duck-left-eyelid">
+            <rect x="314" y="212" width="76" height="76" rx="24" fill="#FBEFDD" />
+          </g>
+        </g>
+
+        <g id="duck-right-eye">
+          <circle cx="448" cy="250" r="34" fill="#ffffff" stroke="#2F3540" stroke-width="3" />
+          <g id="duck-right-pupil">
+            <circle cx="444" cy="254" r="18" fill="#2F3540" />
+            <circle cx="452" cy="246" r="7" fill="#ffffff" />
+            <circle cx="438" cy="262" r="3.5" fill="#ffffff" opacity="0.85" />
+          </g>
+          <g id="duck-right-eyelid">
+            <rect x="410" y="212" width="76" height="76" rx="24" fill="#FBEFDD" />
+          </g>
+        </g>
+
+        <!-- Large bec de canard en relief ; s'ouvre (scaleY) au café. -->
+        <g id="duck-beak">
+          <ellipse cx="400" cy="360" rx="76" ry="16" fill="#E59A3A" opacity="0.25" />
+          <path d="M 344 346 C 376 360 424 360 456 346 C 450 366 420 378 400 378 C 380 378 350 366 344 346 Z" fill="#E0851A" stroke="#C9761A" stroke-width="3" />
+          <path d="M 318 302 C 318 286 348 280 400 280 C 452 280 482 286 482 302 C 490 326 480 350 450 358 C 418 366 382 366 350 358 C 320 350 310 326 318 302 Z" fill="url(#grad-beak)" stroke="#D9831A" stroke-width="3.5" />
+          <path d="M 342 296 C 358 288 442 288 458 296 C 450 308 400 314 342 306 Z" fill="#FFE3A8" opacity="0.8" />
+          <ellipse cx="400" cy="344" rx="20" ry="8" fill="#FFE3A8" opacity="0.45" />
+          <ellipse cx="372" cy="300" rx="5" ry="4" fill="#B96A14" />
+          <ellipse cx="428" cy="300" rx="5" ry="4" fill="#B96A14" />
+        </g>
+
+        <!-- Lunettes rondes (signature), verres transparents, par-dessus les yeux. -->
+        <g id="duck-glasses" fill="none" stroke="#2F3540" stroke-width="7" stroke-linecap="round">
+          <circle cx="352" cy="250" r="43" />
+          <circle cx="448" cy="250" r="43" />
+          <path d="M 393 248 q 7 -11 14 0" />
+          <path d="M 310 244 q -22 -8 -38 2" />
+          <path d="M 490 244 q 22 -8 38 2" />
+          <path d="M 330 230 q 18 -11 34 -3" stroke="#FFFFFF" stroke-width="3.5" stroke-opacity="0.7" />
+          <path d="M 426 230 q 18 -11 34 -3" stroke="#FFFFFF" stroke-width="3.5" stroke-opacity="0.7" />
+        </g>
+
+        <!-- Sourcils expressifs. -->
+        <g fill="none" stroke="#8B5E3C" stroke-width="7" stroke-linecap="round">
+          <path d="M 318 194 q 30 -14 56 -2" />
+          <path d="M 482 194 q -30 -14 -56 -2" />
+        </g>
+
+        <!-- Slot TÊTE : accessoires placeholder (§10.5, masqués par défaut). -->
+        <g id="duck-head-accessory-slot">
+          <g class="duck-accessory" id="accessory-cto-glasses">
+            <rect x="316" y="236" width="168" height="26" rx="8" fill="#1c1c1c" />
+            <circle cx="352" cy="250" r="24" fill="#13283b" stroke="#1c1c1c" stroke-width="4" />
+            <circle cx="448" cy="250" r="24" fill="#13283b" stroke="#1c1c1c" stroke-width="4" />
+          </g>
+          <g class="duck-accessory" id="accessory-works-on-my-machine-helmet">
+            <path d="M 296 200 a 104 104 0 0 1 208 0 Z" fill="#ffb03c" stroke="#7a5a3a" stroke-width="4" />
+            <rect x="292" y="198" width="216" height="16" rx="6" fill="#e7b400" />
+          </g>
+          <g class="duck-accessory" id="accessory-kubernetes-beanie">
+            <path d="M 300 202 a 100 100 0 0 1 200 0 Z" fill="#3b6fd2" />
+            <rect x="296" y="196" width="208" height="18" rx="9" fill="#2b4f9e" />
+          </g>
+          <g class="duck-accessory" id="accessory-meeting-noise-cancelling-headset">
+            <path d="M 278 268 a 122 122 0 0 1 244 0" fill="none" stroke="#2b2f36" stroke-width="12" />
+            <rect x="262" y="254" width="34" height="56" rx="12" fill="#2b2f36" />
+            <rect x="504" y="254" width="34" height="56" rx="12" fill="#2b2f36" />
+          </g>
+        </g>
+      </g>
+
+      <!-- Slot CORPS : accessoires placeholder (suivent le corps via #duck-root). -->
+      <g id="duck-body-accessory-slot">
+        <g class="duck-accessory" id="accessory-too-serious-tie">
+          <path d="M 400 480 l 22 24 l -22 96 l -22 -96 Z" fill="#7a1f2b" />
+          <path d="M 380 480 l 20 18 l 20 -18 Z" fill="#a02a39" />
+        </g>
+        <g class="duck-accessory" id="accessory-production-cape">
+          <path d="M 262 470 q 138 76 276 0 l -28 220 q -110 56 -220 0 Z" fill="#7a1f2b" opacity="0.85" />
+        </g>
+        <g class="duck-accessory" id="accessory-senior-since-tuesday-badge">
+          <rect x="330" y="520" width="60" height="44" rx="8" fill="#f5f1e6" stroke="#7a5a3a" stroke-width="3" />
+          <rect x="338" y="530" width="44" height="6" rx="3" fill="#5b626d" />
+          <rect x="338" y="542" width="34" height="6" rx="3" fill="#9aa1ab" />
+        </g>
+        <g class="duck-accessory" id="accessory-oncall-vest">
+          <path d="M 300 470 l 40 -10 l 60 40 l 60 -40 l 40 10 l -10 230 q -90 40 -180 0 Z" fill="#f2a900" opacity="0.9" />
+          <rect x="320" y="520" width="160" height="14" fill="#e7e7e7" opacity="0.8" />
+        </g>
+        <g class="duck-accessory" id="accessory-friday-in-prod-scarf">
+          <path d="M 326 470 q 74 34 148 0 l 8 40 q -82 34 -164 0 Z" fill="#2e6e4f" />
+          <path d="M 458 506 l 26 90 l -28 6 l -18 -86 Z" fill="#235a40" />
+        </g>
+      </g>
+
+      <!-- ── Tasse de café tenue par la main gauche (accessoire-signature). ──── -->
+      <g id="coffee-cup">
+        <path d="M 342 622 q 28 8 28 28 q 0 20 -28 26" fill="none" stroke="#C9A77E" stroke-width="7" />
+        <rect x="258" y="610" width="90" height="86" rx="14" fill="#FFFAF2" stroke="#C9A77E" stroke-width="4" />
+        <ellipse cx="303" cy="614" rx="42" ry="10" fill="#5A3A22" />
+        <path d="M 268 624 q -6 30 6 56" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.7" />
+        <path d="M 293 650 q 10 -12 20 0 q -10 14 -20 0 Z" fill="#FF7F6A" />
+      </g>
+
+      <!-- Slot MAIN : accessoire placeholder tenu près du corps. -->
+      <g id="duck-hand-accessory-slot">
+        <g class="duck-accessory" id="accessory-tiny-extinguisher">
+          <rect x="262" y="592" width="34" height="80" rx="10" fill="#c0392b" />
+          <rect x="272" y="578" width="14" height="20" rx="4" fill="#1c1c1c" />
+          <rect x="256" y="612" width="46" height="16" rx="4" fill="#e7e7e7" />
+        </g>
+      </g>
+    </g>
+
+    <g id="coffee-steam" opacity="0.05">
+      <path d="M 286 602 q -10 -22 6 -40 q 14 -18 2 -40" fill="none" stroke="#cdbfae" stroke-width="6" stroke-linecap="round" />
+      <path d="M 316 602 q -10 -22 6 -40 q 14 -18 2 -40" fill="none" stroke="#cdbfae" stroke-width="6" stroke-linecap="round" />
+    </g>
+
+    <!-- « Zzz » du sommeil (§dormant) : opacité pilotée par le rig (sleepZ), envol animé en CSS. -->
+    <g id="duck-sleep" opacity="0">
+      <g class="sleep-z" fill="none" stroke="#5B9BD5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M 522 156 h 22 l -22 26 h 22" />
+      </g>
+      <g class="sleep-z" fill="none" stroke="#5B9BD5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M 566 104 h 30 l -30 36 h 30" />
+      </g>
+      <g class="sleep-z" fill="none" stroke="#5B9BD5" stroke-width="11" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M 612 44 h 38 l -38 46 h 38" />
+      </g>
+    </g>
+
+    <g id="keyboard" opacity="0">
+      <rect x="312" y="762" width="176" height="32" rx="8" fill="#2b2f36" />
+      <g fill="#5b626d">
+        <rect x="326" y="770" width="22" height="11" rx="3" />
+        <rect x="356" y="770" width="22" height="11" rx="3" />
+        <rect x="386" y="770" width="22" height="11" rx="3" />
+        <rect x="416" y="770" width="22" height="11" rx="3" />
+        <rect x="446" y="770" width="28" height="11" rx="3" />
+        <rect x="346" y="785" width="108" height="9" rx="3" />
+      </g>
+    </g>
+
+    <g id="terminal" opacity="0">
+      <rect x="582" y="338" width="186" height="146" rx="12" fill="#13283b" stroke="#0b1622" stroke-width="3" />
+      <rect x="582" y="338" width="186" height="26" rx="12" fill="#1d3a55" />
+      <g fill="#4ad29a"><circle cx="602" cy="351" r="4" /><circle cx="618" cy="351" r="4" /><circle cx="634" cy="351" r="4" /></g>
+      <text x="598" y="402" font-family="monospace" font-size="20" fill="#36d27a">deploy 16:58 _</text>
+    </g>
+
+    <g id="particles" opacity="0">
+      <circle cx="220" cy="200" r="8" fill="#ff7f6a" />
+      <circle cx="580" cy="190" r="7" fill="#ffb03c" />
+      <circle cx="300" cy="120" r="6" fill="#ff7f6a" />
+      <circle cx="520" cy="130" r="9" fill="#ffb03c" />
+      <circle cx="160" cy="340" r="6" fill="#ff7f6a" />
+      <circle cx="650" cy="360" r="8" fill="#ffb03c" />
+      <circle cx="400" cy="88" r="7" fill="#ff7f6a" />
+      <circle cx="700" cy="250" r="6" fill="#ffb03c" />
+    </g>
   </g>
 </svg>

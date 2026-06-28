@@ -13,6 +13,8 @@ describe('resolveVisualTargets (§17.5)', () => {
     expect(t.terminalVisible).toBe(false);
     expect(t.shakeIntensity).toBe(0);
     expect(t.incidentParticles).toBe(0);
+    // Endormi à plat : les « Zzz » sont au maximum.
+    expect(t.sleepZ).toBe(1);
   });
 
   it('produces the upright, wide-awake pose at 100', () => {
@@ -24,6 +26,15 @@ describe('resolveVisualTargets (§17.5)', () => {
     expect(t.blinkSpeed).toBeCloseTo(2.4, 6);
     expect(t.wingActivity).toBeCloseTo(1.8, 6);
     expect(t.steamOpacity).toBe(1);
+    // Bien réveillé : plus aucun « Zzz ».
+    expect(t.sleepZ).toBe(0);
+  });
+
+  it('fades the sleeping Zzz out by the time the duck stirs (energy ≥ 24)', () => {
+    expect(resolveVisualTargets(0).sleepZ).toBe(1);
+    expect(resolveVisualTargets(12).sleepZ).toBeCloseTo(0.5, 6);
+    expect(resolveVisualTargets(24).sleepZ).toBe(0);
+    expect(resolveVisualTargets(40).sleepZ).toBe(0);
   });
 
   it('clamps out-of-range energy like the reference', () => {
