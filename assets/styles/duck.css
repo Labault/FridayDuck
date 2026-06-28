@@ -386,15 +386,19 @@
 }
 
 /* ── Page de démo 2b-i (curseur d'énergie local, temporaire). ─────────────── */
+/* Toute la démo tient dans le viewport — pas de scroll de page. */
 .duck-demo {
   display: grid;
   grid-template-columns: minmax(320px, 1fr) 360px;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 @media (max-width: 820px) {
   .duck-demo {
     grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
   }
 }
 
@@ -418,7 +422,7 @@
 .duck-scene {
   width: 100%;
   height: 100%;
-  min-height: 100vh;
+  min-height: 0;
 }
 
 .duck-scene svg {
@@ -429,7 +433,7 @@
 
 @media (max-width: 820px) {
   .duck-scene {
-    min-height: 60vh;
+    height: 60vh;
   }
 }
 
@@ -440,6 +444,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .duck-panel h1 {

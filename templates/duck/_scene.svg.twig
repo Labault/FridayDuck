@@ -1,7 +1,7 @@
 <svg
   id="duck-scene"
   xmlns="http://www.w3.org/2000/svg"
-  viewBox="0 0 800 800"
+  viewBox="0 0 800 540"
   preserveAspectRatio="xMidYMid meet"
   role="img"
   aria-labelledby="duck-title duck-description"
@@ -55,106 +55,102 @@
   <!-- ════════════════ DÉCOR : bureau de dev (derrière le canard) ════════════════ -->
   <g id="scene-background">
     <!-- Mur + plinthe + sol. -->
-    <rect x="0" y="0" width="800" height="600" fill="url(#grad-wall)" />
-    <rect x="0" y="596" width="800" height="8" fill="#D6C6AE" />
-    <rect x="0" y="604" width="800" height="196" fill="#E4D6BF" />
+    <rect x="0" y="0" width="800" height="432" fill="url(#grad-wall)" />
+    <rect x="0" y="426" width="800" height="8" fill="#D6C6AE" />
+    <rect x="0" y="432" width="800" height="108" fill="#E4D6BF" />
     <g stroke="#D3C1A4" stroke-width="2" opacity="0.6">
-      <path d="M 150 604 L 110 800" /><path d="M 360 604 L 340 800" /><path d="M 560 604 L 580 800" /><path d="M 700 604 L 740 800" />
+      <path d="M 180 432 L 150 540" /><path d="M 380 432 L 360 540" /><path d="M 560 432 L 588 540" /><path d="M 720 432 L 752 540" />
     </g>
 
-    <!-- Fenêtre avec vue sur le Puy de Dôme. -->
-    <g>
-      <rect x="40" y="84" width="214" height="220" rx="10" fill="#F8F5EF" stroke="#CBBDA6" stroke-width="6" />
-      <rect x="54" y="98" width="186" height="192" rx="4" fill="url(#grad-sky)" />
-      <!-- soleil doux + nuages -->
-      <circle cx="92" cy="138" r="18" fill="#FFE6A6" />
-      <ellipse cx="190" cy="132" rx="34" ry="13" fill="#FFFFFF" opacity="0.85" />
-      <ellipse cx="150" cy="160" rx="26" ry="10" fill="#FFFFFF" opacity="0.7" />
-      <!-- Chaîne des Puys en arrière-plan (collines arrondies, plus claires). -->
-      <path d="M 54 290 L 54 258 C 74 246 92 250 104 260 C 120 242 140 246 152 260 C 170 244 196 248 210 260 C 222 252 234 256 240 262 L 240 290 Z" fill="#A8CF88" />
-      <!-- Le Puy de Dôme : grand dôme arrondi volcanique, deux tons. -->
-      <path d="M 56 290 C 60 224 96 148 132 148 C 178 148 226 224 240 290 Z" fill="#8CBB66" />
-      <path d="M 132 148 C 96 148 60 224 56 290 L 132 290 Z" fill="#9DC878" />
-      <!-- Chemin panoramique en lacets sur le flanc. -->
-      <path d="M 92 284 q 44 -8 60 -36 q 10 -20 -10 -30" fill="none" stroke="#CDE0AE" stroke-width="3" stroke-linecap="round" opacity="0.85" />
-      <!-- Temple de Mercure : ruines gallo-romaines, à gauche du sommet. -->
-      <g fill="#D8CCB4" stroke="#B9A988" stroke-width="1">
-        <rect x="100" y="146" width="34" height="5" rx="1" />
-        <rect x="103" y="133" width="4" height="14" /><rect x="111" y="131" width="4" height="16" />
-        <rect x="119" y="135" width="4" height="12" /><rect x="127" y="133" width="4" height="14" />
-        <rect x="101" y="128" width="16" height="4" />
-      </g>
-      <!-- Antenne hertzienne (TDF) au sommet, à droite du temple. -->
-      <g stroke="#6E7A86" stroke-width="2.5" stroke-linecap="round" fill="none">
-        <path d="M 150 148 L 150 104" />
-        <path d="M 143 148 L 150 122 L 157 148" />
-        <path d="M 145 138 L 155 138 M 146 128 L 154 128 M 147 118 L 153 118" />
-      </g>
-      <circle cx="150" cy="102" r="3" fill="#E5564B" />
-      <!-- liseré d'herbe au pied. -->
-      <path d="M 54 290 C 110 278 152 282 240 290 L 240 292 L 54 292 Z" fill="#73A352" opacity="0.7" />
-      <!-- meneaux + appui -->
-      <line x1="147" y1="98" x2="147" y2="290" stroke="#F8F5EF" stroke-width="7" />
-      <line x1="54" y1="194" x2="240" y2="194" stroke="#F8F5EF" stroke-width="7" />
-      <rect x="32" y="300" width="230" height="12" rx="4" fill="#E4DAC6" />
+    <!-- Grande fenêtre : vue sur le Puy de Dôme (élément régional mis en avant). -->
+    <rect x="26" y="34" width="300" height="274" rx="14" fill="#F8F5EF" stroke="#CBBDA6" stroke-width="7" />
+    <rect x="40" y="48" width="272" height="246" rx="6" fill="url(#grad-sky)" />
+    <!-- soleil + nuages -->
+    <circle cx="86" cy="98" r="22" fill="#FFE6A6" />
+    <ellipse cx="250" cy="92" rx="42" ry="15" fill="#FFFFFF" opacity="0.85" />
+    <ellipse cx="206" cy="126" rx="30" ry="11" fill="#FFFFFF" opacity="0.7" />
+    <!-- Chaîne des Puys (arrière-plan). -->
+    <path d="M 40 294 L 40 256 C 70 242 96 248 112 262 C 134 240 160 246 178 264 C 202 242 236 248 256 264 C 280 250 300 256 312 262 L 312 294 Z" fill="#A8CF88" />
+    <!-- Le Puy de Dôme : grand dôme volcanique arrondi, deux tons. -->
+    <path d="M 44 294 C 56 214 120 120 184 120 C 248 120 304 210 312 294 Z" fill="#8CBB66" />
+    <path d="M 184 120 C 120 120 56 214 44 294 L 184 294 Z" fill="#9DC878" />
+    <!-- Chemin panoramique en lacets. -->
+    <path d="M 84 288 q 56 -10 78 -46 q 14 -26 -14 -40" fill="none" stroke="#CDE0AE" stroke-width="4" stroke-linecap="round" opacity="0.85" />
+    <!-- Temple de Mercure : ruines gallo-romaines, à gauche du sommet. -->
+    <g fill="#DACEB6" stroke="#B9A988" stroke-width="1.5">
+      <rect x="120" y="118" width="46" height="7" rx="1" />
+      <rect x="124" y="96" width="6" height="22" /><rect x="135" y="92" width="6" height="26" />
+      <rect x="146" y="98" width="6" height="20" /><rect x="157" y="94" width="6" height="24" />
+      <rect x="121" y="88" width="24" height="6" />
     </g>
-
-    <!-- Bureau (plateau bois). -->
-    <rect x="120" y="300" width="660" height="52" rx="8" fill="url(#grad-wood)" />
-    <rect x="120" y="348" width="660" height="14" rx="4" fill="#A87C50" />
-
-    <!-- Triple écran posé sur le bureau. -->
+    <!-- Antenne du Puy de Dôme : pylône en treillis (silhouette réelle). -->
     <g>
-      <!-- pieds -->
+      <path d="M 196 122 L 206 72 L 212 72 L 222 122 Z" fill="#C2C9D2" />
+      <g stroke="#8A929E" stroke-width="2" stroke-linecap="round" fill="none">
+        <path d="M 199 110 L 219 110 M 201 98 L 217 98 M 203 86 L 215 86 M 205 78 L 213 78" />
+        <path d="M 196 122 L 217 110 M 222 122 L 201 110 M 201 110 L 215 98 M 217 110 L 203 98 M 203 98 L 213 86 M 215 98 L 205 86" />
+      </g>
+      <path d="M 209 72 L 209 56" stroke="#8A929E" stroke-width="2.5" stroke-linecap="round" />
+      <circle cx="209" cy="55" r="3.5" fill="#E5564B" />
+    </g>
+    <!-- liseré d'herbe. -->
+    <path d="M 40 294 C 110 282 170 286 312 294 L 312 296 L 40 296 Z" fill="#73A352" opacity="0.7" />
+    <!-- meneaux + appui. -->
+    <line x1="244" y1="48" x2="244" y2="294" stroke="#F8F5EF" stroke-width="7" />
+    <line x1="40" y1="178" x2="312" y2="178" stroke="#F8F5EF" stroke-width="7" />
+    <rect x="16" y="304" width="320" height="13" rx="4" fill="#E4DAC6" />
+
+    <!-- Bureau (plateau, à droite). -->
+    <rect x="322" y="250" width="478" height="34" rx="8" fill="url(#grad-wood)" />
+    <rect x="322" y="284" width="478" height="12" rx="4" fill="#A87C50" />
+
+    <!-- Triple écran (décor secondaire), entièrement à droite du canard. -->
+    <g>
       <g fill="#3A3F47">
-        <rect x="318" y="288" width="20" height="20" /><rect x="296" y="300" width="64" height="10" rx="3" />
-        <rect x="492" y="284" width="20" height="24" /><rect x="470" y="300" width="64" height="10" rx="3" />
-        <rect x="660" y="288" width="20" height="20" /><rect x="638" y="300" width="64" height="10" rx="3" />
+        <rect x="522" y="240" width="13" height="14" /><rect x="509" y="248" width="40" height="8" rx="3" />
+        <rect x="624" y="238" width="13" height="16" /><rect x="611" y="248" width="40" height="8" rx="3" />
+        <rect x="726" y="240" width="13" height="14" /><rect x="713" y="248" width="40" height="8" rx="3" />
       </g>
-      <!-- écran gauche (éditeur de code) -->
-      <rect x="250" y="150" width="158" height="146" rx="8" fill="#23272E" />
-      <rect x="260" y="160" width="138" height="126" rx="4" fill="#1E2A38" />
-      <g stroke-linecap="round" stroke-width="5">
-        <path d="M 270 176 h 40" stroke="#FF7F6A" /><path d="M 318 176 h 56" stroke="#5FD0D8" />
-        <path d="M 280 192 h 70" stroke="#9DE07A" /><path d="M 270 208 h 36" stroke="#FFD98A" />
-        <path d="M 280 224 h 84" stroke="#7FB6F2" /><path d="M 270 240 h 52" stroke="#9DE07A" />
-        <path d="M 280 256 h 64" stroke="#FF7F6A" /><path d="M 270 272 h 44" stroke="#5FD0D8" />
+      <!-- écran gauche (code) -->
+      <rect x="486" y="156" width="98" height="94" rx="6" fill="#23272E" />
+      <rect x="492" y="162" width="86" height="82" rx="3" fill="#1E2A38" />
+      <g stroke-linecap="round" stroke-width="4">
+        <path d="M 500 176 h 22" stroke="#FF7F6A" /><path d="M 528 176 h 34" stroke="#5FD0D8" />
+        <path d="M 506 190 h 44" stroke="#9DE07A" /><path d="M 500 204 h 20" stroke="#FFD98A" />
+        <path d="M 506 218 h 50" stroke="#7FB6F2" /><path d="M 500 232 h 32" stroke="#9DE07A" />
       </g>
       <!-- écran central (terminal) -->
-      <rect x="420" y="146" width="160" height="150" rx="8" fill="#23272E" />
-      <rect x="430" y="156" width="140" height="130" rx="4" fill="#0E1B12" />
-      <g fill="#36d27a" font-family="monospace" font-size="13">
-        <text x="440" y="178">$ git push</text>
-        <text x="440" y="198">deploy ✓</text>
-        <text x="440" y="218">friday 16:58</text>
+      <rect x="588" y="152" width="100" height="98" rx="6" fill="#23272E" />
+      <rect x="594" y="158" width="88" height="86" rx="3" fill="#0E1B12" />
+      <g fill="#36d27a" font-family="monospace" font-size="11">
+        <text x="600" y="176">$ git push</text>
+        <text x="600" y="194">deploy ✓</text>
+        <text x="600" y="212">friday 16:58</text>
       </g>
-      <path d="M 440 232 h 14" stroke="#36d27a" stroke-width="5" stroke-linecap="round" />
+      <path d="M 600 226 h 11" stroke="#36d27a" stroke-width="4" stroke-linecap="round" />
       <!-- écran droit (navigateur) -->
-      <rect x="592" y="150" width="158" height="146" rx="8" fill="#23272E" />
-      <rect x="602" y="160" width="138" height="126" rx="4" fill="#F4F7FA" />
-      <rect x="602" y="160" width="138" height="20" rx="4" fill="#D9E2EA" />
-      <g fill="#FF7F6A"><circle cx="614" cy="170" r="3" /></g>
-      <g fill="#FFD98A"><circle cx="624" cy="170" r="3" /></g>
-      <g fill="#9DE07A"><circle cx="634" cy="170" r="3" /></g>
-      <g stroke-linecap="round" stroke-width="5">
-        <path d="M 612 198 h 60" stroke="#7FB6F2" /><path d="M 612 214 h 110" stroke="#D2DBE3" />
-        <path d="M 612 230 h 86" stroke="#D2DBE3" /><path d="M 612 250 h 118" stroke="#2CB7C2" />
-        <path d="M 612 266 h 70" stroke="#D2DBE3" />
+      <rect x="692" y="156" width="98" height="94" rx="6" fill="#23272E" />
+      <rect x="698" y="162" width="86" height="82" rx="3" fill="#F4F7FA" />
+      <rect x="698" y="162" width="86" height="14" rx="3" fill="#D9E2EA" />
+      <circle cx="707" cy="169" r="2.4" fill="#FF7F6A" /><circle cx="715" cy="169" r="2.4" fill="#FFD98A" /><circle cx="723" cy="169" r="2.4" fill="#9DE07A" />
+      <g stroke-linecap="round" stroke-width="4">
+        <path d="M 706 192 h 40" stroke="#7FB6F2" /><path d="M 706 206 h 70" stroke="#D2DBE3" />
+        <path d="M 706 220 h 54" stroke="#D2DBE3" /><path d="M 706 234 h 74" stroke="#2CB7C2" />
       </g>
 
       <!-- Figurine Tux (manchot Linux) sur l'écran gauche. -->
-      <g transform="translate(300 96)">
-        <ellipse cx="22" cy="40" rx="22" ry="26" fill="#1c1c1c" />
-        <ellipse cx="22" cy="44" rx="13" ry="18" fill="#FFFFFF" />
-        <circle cx="22" cy="20" r="16" fill="#1c1c1c" />
+      <g transform="translate(512 100)">
+        <ellipse cx="22" cy="40" rx="20" ry="24" fill="#1c1c1c" />
+        <ellipse cx="22" cy="44" rx="12" ry="16" fill="#FFFFFF" />
+        <circle cx="22" cy="20" r="15" fill="#1c1c1c" />
         <ellipse cx="16" cy="20" rx="4" ry="5" fill="#FFFFFF" /><ellipse cx="28" cy="20" rx="4" ry="5" fill="#FFFFFF" />
         <circle cx="16" cy="21" r="2" fill="#1c1c1c" /><circle cx="28" cy="21" r="2" fill="#1c1c1c" />
         <path d="M 16 27 q 6 6 12 0 q -6 4 -12 0 Z" fill="#F4A62A" />
-        <path d="M 10 64 l 14 0 l -4 8 l -14 0 Z" fill="#F4A62A" /><path d="M 24 64 l 14 0 l 4 8 l -14 0 Z" fill="#F4A62A" />
+        <path d="M 10 60 l 13 0 l -4 8 l -13 0 Z" fill="#F4A62A" /><path d="M 24 60 l 13 0 l 4 8 l -13 0 Z" fill="#F4A62A" />
       </g>
 
       <!-- Figurine baleine Docker sur l'écran droit. -->
-      <g transform="translate(636 104)">
+      <g transform="translate(700 98)">
         <path d="M 8 36 C 8 18 30 12 48 16 C 60 18 72 24 80 34 C 70 44 50 48 34 46 C 20 44 10 42 8 36 Z" fill="#2496ED" />
         <g fill="#2bb0ff" stroke="#1f86d6" stroke-width="1.5">
           <rect x="30" y="2" width="12" height="11" /><rect x="44" y="2" width="12" height="11" /><rect x="37" y="-10" width="12" height="11" />
@@ -165,50 +161,52 @@
       </g>
     </g>
 
-    <!-- Clavier + souris Logitech sur le plateau, à droite. -->
+    <!-- Clavier + souris Logitech sur le plateau (devant les écrans). -->
     <g>
-      <rect x="516" y="312" width="176" height="40" rx="8" fill="#3A3F47" />
-      <rect x="516" y="312" width="176" height="40" rx="8" fill="#2C3036" opacity="0.4" />
+      <rect x="512" y="258" width="150" height="30" rx="7" fill="#3A3F47" />
+      <rect x="512" y="258" width="150" height="30" rx="7" fill="#2C3036" opacity="0.4" />
       <g fill="#23262B">
-        <rect x="526" y="320" width="14" height="9" rx="2" /><rect x="544" y="320" width="14" height="9" rx="2" />
-        <rect x="562" y="320" width="14" height="9" rx="2" /><rect x="580" y="320" width="14" height="9" rx="2" />
-        <rect x="598" y="320" width="14" height="9" rx="2" /><rect x="616" y="320" width="14" height="9" rx="2" />
-        <rect x="634" y="320" width="14" height="9" rx="2" /><rect x="652" y="320" width="14" height="9" rx="2" />
-        <rect x="670" y="320" width="12" height="9" rx="2" />
-        <rect x="540" y="334" width="120" height="10" rx="2" />
+        <rect x="520" y="264" width="12" height="7" rx="2" /><rect x="536" y="264" width="12" height="7" rx="2" />
+        <rect x="552" y="264" width="12" height="7" rx="2" /><rect x="568" y="264" width="12" height="7" rx="2" />
+        <rect x="584" y="264" width="12" height="7" rx="2" /><rect x="600" y="264" width="12" height="7" rx="2" />
+        <rect x="616" y="264" width="12" height="7" rx="2" /><rect x="632" y="264" width="12" height="7" rx="2" />
+        <rect x="648" y="264" width="8" height="7" rx="2" />
+        <rect x="532" y="276" width="104" height="7" rx="2" />
       </g>
-      <!-- souris MX -->
-      <path d="M 712 314 C 736 314 748 326 748 342 C 748 354 736 354 712 354 C 700 354 700 314 712 314 Z" fill="#3A3F47" />
-      <line x1="724" y1="318" x2="724" y2="332" stroke="#23262B" stroke-width="3" stroke-linecap="round" />
+      <path d="M 678 260 C 698 260 708 270 708 283 C 708 292 698 292 678 292 C 668 292 668 260 678 260 Z" fill="#3A3F47" />
+      <line x1="688" y1="264" x2="688" y2="276" stroke="#23262B" stroke-width="2.5" stroke-linecap="round" />
     </g>
 
-    <!-- ElePHPant (éléphant PHP) sur le bureau, à gauche. -->
-    <g transform="translate(150 244)">
-      <ellipse cx="46" cy="70" rx="46" ry="40" fill="#8892BF" />
-      <ellipse cx="46" cy="76" rx="30" ry="26" fill="#9FA8CE" />
-      <circle cx="58" cy="34" r="30" fill="#8892BF" />
-      <path d="M 12 36 q -18 0 -16 22 q 2 14 14 12 q -2 -16 8 -22 Z" fill="#7A84B4" />
-      <path d="M 40 50 C 30 60 28 80 30 96 C 38 96 42 80 46 66 Z" fill="#8892BF" />
-      <ellipse cx="36" cy="100" rx="12" ry="8" fill="#7A84B4" /><ellipse cx="62" cy="102" rx="12" ry="8" fill="#7A84B4" />
-      <circle cx="62" cy="30" r="4" fill="#2b2f55" />
-      <path d="M 44 18 q 14 -10 30 -2" stroke="#5b6699" stroke-width="3" fill="none" stroke-linecap="round" />
+    <!-- ElePHPant (la mascotte PHP), posé au sol à gauche, redessiné. -->
+    <g>
+      <ellipse cx="112" cy="392" rx="56" ry="46" fill="#8892BF" />
+      <rect x="86" y="406" width="26" height="32" rx="11" fill="#7C86B2" />
+      <rect x="120" y="406" width="26" height="32" rx="11" fill="#7C86B2" />
+      <ellipse cx="99" cy="438" rx="16" ry="7" fill="#6B739E" /><ellipse cx="133" cy="438" rx="16" ry="7" fill="#6B739E" />
+      <circle cx="74" cy="360" r="40" fill="#8892BF" />
+      <ellipse cx="86" cy="356" rx="26" ry="32" fill="#7C86B2" />
+      <ellipse cx="88" cy="356" rx="15" ry="21" fill="#9BA1CA" />
+      <path d="M 44 358 C 26 368 26 400 40 418 C 49 428 63 426 61 414 C 51 410 47 394 55 384 C 61 376 59 364 51 358 Z" fill="#8892BF" />
+      <path d="M 50 392 q -8 8 -2 18" stroke="#F4EFE2" stroke-width="4" fill="none" stroke-linecap="round" />
+      <circle cx="70" cy="352" r="5" fill="#2b2f55" /><circle cx="72" cy="350" r="1.7" fill="#FFFFFF" />
+      <path d="M 70 322 q 6 -10 14 -6" stroke="#6B739E" stroke-width="4" fill="none" stroke-linecap="round" />
     </g>
 
     <!-- Siège ergonomique (dossier + têtière + accoudoirs), derrière le canard. -->
     <g>
-      <rect x="344" y="300" width="112" height="46" rx="22" fill="#4F5864" />
-      <rect x="322" y="332" width="156" height="268" rx="34" fill="#5A6470" />
-      <rect x="332" y="348" width="136" height="238" rx="26" fill="#48515C" opacity="0.55" />
+      <rect x="352" y="158" width="96" height="44" rx="22" fill="#4F5864" />
+      <rect x="330" y="190" width="140" height="262" rx="30" fill="#5A6470" />
+      <rect x="340" y="204" width="120" height="232" rx="24" fill="#48515C" opacity="0.55" />
       <g stroke="#3E4651" stroke-width="2" opacity="0.5">
-        <path d="M 356 374 v 196" /><path d="M 388 374 v 204" /><path d="M 412 374 v 204" /><path d="M 444 374 v 196" />
+        <path d="M 360 228 v 196" /><path d="M 388 228 v 204" /><path d="M 414 228 v 204" /><path d="M 440 228 v 196" />
       </g>
-      <rect x="298" y="490" width="30" height="86" rx="14" fill="#3E4651" />
-      <rect x="472" y="490" width="30" height="86" rx="14" fill="#3E4651" />
+      <rect x="312" y="356" width="26" height="74" rx="12" fill="#3E4651" />
+      <rect x="462" y="356" width="26" height="74" rx="12" fill="#3E4651" />
     </g>
   </g>
 
   <!-- ════════════════ CANARD (réduit pour laisser respirer le décor) ════════════════ -->
-  <g id="duck-stage" transform="translate(216 277) scale(0.46)">
+  <g id="duck-stage" transform="translate(232 135) scale(0.42)">
     <g id="duck-shadow">
       <ellipse cx="400" cy="772" rx="186" ry="24" fill="#3b2f24" opacity="0.18" />
     </g>
