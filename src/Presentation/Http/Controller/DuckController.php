@@ -14,7 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Twig\Environment;
 
 /**
- * GET /duck — page du canard (Phase 2b-ii).
+ * GET / — page du canard (Phase 2b-ii).
  *
  * État initial par VALEURS TWIG (§19.3) : on résout l'identité (cookie) et on
  * RÉUTILISE le service applicatif de GET /api/friday/current (même handler — il
