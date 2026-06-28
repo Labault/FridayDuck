@@ -32,7 +32,7 @@ final readonly class DuckController
     ) {
     }
 
-    #[Route('/duck', name: 'duck_demo', methods: ['GET'])]
+    #[Route('/', name: 'duck_demo', methods: ['GET'])]
     public function __invoke(Request $request): Response
     {
         $resolvedVisitorCookie = $this->visitorCookieResolver->readOrIssue($request);
