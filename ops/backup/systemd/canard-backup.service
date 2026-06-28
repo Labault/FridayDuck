@@ -1,0 +1,16 @@
+[Unit]
+Description=Le Canard du Vendredi — sauvegarde PostgreSQL chiffrée off-site (restic)
+Documentation=file:/opt/canard-backup/README.md
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+# Échec → notification immédiate (en plus du dead-man's-switch côté succès).
+OnFailure=canard-backup-alert@%n.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/canard-backup/backup.env
+ExecStart=/opt/canard-backup/backup.sh
+# Ne pas peser sur la prod : priorité CPU/IO basse.
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=1800

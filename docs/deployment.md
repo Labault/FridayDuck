@@ -170,5 +170,8 @@ redéploie), mais le retag d'image est le chemin le plus court.
 
 - [ ] Durcissement défensif de l'image (non-root, base minimale, surface réduite).
 - [ ] Stack observabilité sur le VPS (Collector/Tempo/Grafana) + Alertmanager réel.
-- [ ] Sauvegardes PostgreSQL automatisées et restauration testée (§37.4 — ici, seul
-      le dump pré-migration de `deploy.sh` fait office de filet).
+- [x] Sauvegardes PostgreSQL automatisées et restauration testée (§37.4) — restic →
+      Hetzner Storage Box, timers systemd au niveau hôte. Voir
+      [`ops/backup/README.md`](../ops/backup/README.md) (installation/wiring) et
+      [`docs/runbook-backup.md`](runbook-backup.md) (restauration). Le dump
+      pré-migration de `deploy.sh` reste le filet de rollback LOCAL, distinct.

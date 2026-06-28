@@ -1,0 +1,12 @@
+[Unit]
+Description=Déclenche la sauvegarde PostgreSQL quotidienne du Canard du Vendredi
+
+[Timer]
+# Nuit (heure du VPS). RandomizedDelaySec lisse la charge et évite l'heure pile.
+OnCalendar=*-*-* 03:30:00
+RandomizedDelaySec=1800
+# Persistent=true → rattrape le run manqué si le VPS était éteint à l'heure dite.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

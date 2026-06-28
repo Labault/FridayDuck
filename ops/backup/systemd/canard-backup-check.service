@@ -1,0 +1,14 @@
+[Unit]
+Description=Le Canard du Vendredi — vérification d'intégrité restic (check --read-data)
+Documentation=file:/opt/canard-backup/README.md
+Wants=network-online.target
+After=network-online.target
+OnFailure=canard-backup-alert@%n.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/canard-backup/backup.env
+ExecStart=/opt/canard-backup/check.sh
+Nice=15
+IOSchedulingClass=idle
+TimeoutStartSec=3600

@@ -1,0 +1,14 @@
+[Unit]
+Description=Le Canard du Vendredi — test de restauration mensuel (cible jetable)
+Documentation=file:/opt/canard-backup/README.md
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+OnFailure=canard-backup-alert@%n.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/canard-backup/backup.env
+ExecStart=/opt/canard-backup/restore-test.sh
+Nice=15
+IOSchedulingClass=idle
+TimeoutStartSec=1800

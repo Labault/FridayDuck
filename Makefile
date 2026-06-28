@@ -17,7 +17,8 @@
 	console cc migrate migration db worker relay \
 	e2e-up e2e-down e2e e2e-all \
 	obs-up obs-down \
-	deploy smoke prod-up prod-down prod-ps prod-logs prod-sh prod-config
+	deploy smoke prod-up prod-down prod-ps prod-logs prod-sh prod-config \
+	backup-install backup-now backup-restore-test
 
 # ── Binaire Compose & fichiers d'environnement ───────────────────────────────
 # Surcharge : `make up DC="docker-compose"`.
@@ -180,3 +181,15 @@ prod-sh: ## Ouvre un shell dans le conteneur app prod
 
 prod-config: ## Affiche la config prod résolue (vérifie l'interpolation des secrets)
 	$(DCP) config
+
+##@ Sauvegardes PostgreSQL (sur le VPS — restic → Storage Box, §37.4)
+
+backup-install: ## Installe les units/scripts de sauvegarde sur l'hôte (root, VPS)
+	sudo ops/backup/install.sh
+
+backup-now: ## Lance une sauvegarde immédiate (via le service systemd)
+	sudo systemctl start canard-backup.service
+	sudo journalctl -u canard-backup.service -n 30 --no-pager
+
+backup-restore-test: ## Teste la restauration vers une cible JETABLE (jamais la prod)
+	sudo /opt/canard-backup/restore-test.sh

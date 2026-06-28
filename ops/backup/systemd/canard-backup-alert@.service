@@ -1,0 +1,9 @@
+[Unit]
+# Template OnFailure : %i = nom de l'unité défaillante (canard-backup.service, …).
+Description=Alerte d'échec de sauvegarde — %i
+Documentation=file:/opt/canard-backup/README.md
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/canard-backup/backup.env
+ExecStart=/opt/canard-backup/alert.sh %i

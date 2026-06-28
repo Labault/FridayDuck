@@ -1,0 +1,13 @@
+[Unit]
+Description=Déclenche le test de restauration mensuel
+# LIVRÉ mais NON activé par défaut : `systemctl enable --now canard-restore-test.timer`
+# quand tu décides de l'allumer (cf. install.sh, qui ne l'enable pas).
+
+[Timer]
+# Le 1er de chaque mois, après la fenêtre des autres jobs.
+OnCalendar=*-*-01 05:30:00
+RandomizedDelaySec=3600
+Persistent=true
+
+[Install]
+WantedBy=timers.target
