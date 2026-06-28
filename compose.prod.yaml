@@ -56,6 +56,18 @@ x-app-env: &app-env
   OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
   OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-friday-duck}
 
+# Durcissement runtime COMMUN aux trois services applicatifs (app, worker, relay) :
+# exécution non-root (USER www-data, héritée de l'image), FS racine en lecture
+# seule, zéro capability, pas d'élévation de privilège. Les chemins inscriptibles
+# (tmpfs) et le sysctl du bind :80 RESTENT propres à chaque service (app seul sert
+# en HTTP), déclarés en clair sous chacun.
+x-hardening: &hardening
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - "no-new-privileges:true"
+
 services:
   app:
     image: *app-image
@@ -95,11 +107,7 @@ services:
       - internal
     # ── Durcissement runtime (Phase 9) : non-root + FS racine en lecture seule ──
     # L'image tourne déjà en www-data (cf. Dockerfile). Ici on verrouille le FS.
-    read_only: true
-    cap_drop:
-      - ALL
-    security_opt:
-      - "no-new-privileges:true"
+    <<: *hardening
     # :80 est un port privilégié. En non-root, on abaisse le seuil des ports non
     # privilégiés À 80 dans le SEUL netns du conteneur (sysctl namespacé, autorisé
     # par Docker par défaut). ZÉRO capability, pas de setcap. Le port et le schéma
@@ -152,6 +160,13 @@ services:
       - "-v"
     networks:
       - internal
+    # Durcissement : worker non-root + FS racine en lecture seule. Pas de serveur
+    # web ici (ni Caddy, ni bind de port) → ni sysctl, ni tmpfs /data /config. Seuls
+    # /tmp et var/share (pool cache.app du Scheduler) sont écrits au runtime.
+    <<: *hardening
+    tmpfs:
+      - /tmp
+      - /app/var/share:mode=1777
 
   relay:
     image: *app-image
@@ -174,6 +189,12 @@ services:
     command: ["while true; do php bin/console app:outbox:relay >/dev/null 2>&1 || true; sleep 1; done"]
     networks:
       - internal
+    # Durcissement : relay non-root + FS racine en lecture seule. Comme le worker,
+    # aucun serveur web → ni sysctl, ni tmpfs /data /config ; /tmp + var/share suffisent.
+    <<: *hardening
+    tmpfs:
+      - /tmp
+      - /app/var/share:mode=1777
 
   database:
     image: postgres:${POSTGRES_VERSION:-17}-alpine
