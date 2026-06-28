@@ -9,23 +9,34 @@
         l'énergie officielle revient du serveur et passe par la barrière de
         version. Pas de Mercure ici (Phase 3) : la page reflète MES actions.
     #}
+    {#
+        La value Stimulus `winner` est typée Object. Un hash Twig vide `{}` est
+        sérialisé par json_encode en `[]` (tableau) → le décodeur Stimulus
+        refuse (« expected object but got array ») et le contrôleur planterait à
+        connect(), tuant le bouton café. Tant qu'il n'y a pas de gagnant, on OMET
+        la clé : Stimulus retombe sur sa valeur par défaut `{}` (un vrai objet).
+    #}
+    {% set duck_args = {
+        energy: friday.energy,
+        energyVersion: friday.energyVersion,
+        remainingCoffees: friday.remainingCoffees,
+        active: friday.active,
+        status: friday.status,
+        coffeesUrl: path('api_friday_coffees'),
+        mercureUrl: mercure(mercureTopic),
+    } %}
+    {% if friday.vote and friday.vote.winner %}
+        {% set duck_args = duck_args|merge({ winner: {
+            code: friday.vote.winner.code,
+            label: friday.vote.winner.label,
+            slot: friday.vote.winner.slot,
+            svgGroupId: friday.vote.winner.svgGroupId,
+        } }) %}
+    {% endif %}
+
     <section
         class="duck-demo"
-        {{ stimulus_controller('duck', {
-            energy: friday.energy,
-            energyVersion: friday.energyVersion,
-            remainingCoffees: friday.remainingCoffees,
-            active: friday.active,
-            status: friday.status,
-            coffeesUrl: path('api_friday_coffees'),
-            mercureUrl: mercure(mercureTopic),
-            winner: friday.vote and friday.vote.winner ? {
-                code: friday.vote.winner.code,
-                label: friday.vote.winner.label,
-                slot: friday.vote.winner.slot,
-                svgGroupId: friday.vote.winner.svgGroupId,
-            } : {},
-        }) }}
+        {{ stimulus_controller('duck', duck_args) }}
     >
         <div class="duck-stage">
             <div class="duck-scene" data-duck-target="scene">

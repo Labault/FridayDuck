@@ -90,20 +90,23 @@ export default class extends Controller<HTMLElement> {
       this.mounter.mount(this.winnerValue.svgGroupId, this.winnerValue.label ?? '');
     }
 
-    await initStudio();
-    this.theatre = createDuckTheatre();
-    await this.theatre.project.ready;
-
+    // État initial (§19.3) + signal d'accessibilité (§28.1) rendus SYNCHRONEMENT,
+    // AVANT toute initialisation Theatre.js. L'autorité serveur (pose, cafés
+    // restants) et le mode reduced-motion ne doivent jamais attendre le
+    // chargement de l'animation : sinon le canard reste « muet » tant que
+    // Theatre.js n'est pas prêt (invisible en unit, visible en e2e navigateur).
     this.reducedQuery.addEventListener('change', this.onReducedChange);
-
-    // État initial (§19.3) amorcé via la barrière — aucun fetch client.
     this.activeNow = this.activeValue;
     this.remainingNow = this.remainingCoffeesValue;
     this.barrier.apply({ energy: this.energyValue, energyVersion: this.energyVersionValue });
-
     this.refreshReadout();
     this.refreshReduced();
     this.updateButton();
+
+    // Theatre.js + boucle de rendu : asynchrone, n'affecte pas l'état ci-dessus.
+    await initStudio();
+    this.theatre = createDuckTheatre();
+    await this.theatre.project.ready;
 
     this.loop = startRenderLoop({
       rig: this.rig,

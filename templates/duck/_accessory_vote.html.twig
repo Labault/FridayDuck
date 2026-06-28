@@ -12,24 +12,36 @@
     }]) %}
 {% endfor %}
 
+{#
+    La value Stimulus `winner` est typée Object. Un hash Twig vide `{}` est
+    sérialisé par json_encode en `[]` (tableau), que le décodeur Stimulus refuse
+    (« expected object but got array ») → le contrôleur planterait à connect().
+    Tant qu'il n'y a pas de gagnant, on OMET la clé : Stimulus retombe alors sur
+    sa valeur par défaut `{}` (un vrai objet vide). L'API expose `winner` en
+    objet-ou-null ; on reste donc en Object, on ne force jamais un tableau.
+#}
+{% set vote_args = {
+    options: vote_options,
+    hasVoted: friday.visitorHasVoted,
+    votedAccessory: friday.votedAccessoryCode ?? '',
+    open: friday.vote.open,
+    closesAt: friday.vote.closesAt,
+    resultsSequence: friday.vote.resultsSequence,
+    votesUrl: path('api_friday_accessory_votes'),
+    mercureUrl: mercure(mercureTopic),
+} %}
+{% if friday.vote.winner %}
+    {% set vote_args = vote_args|merge({ winner: {
+        code: friday.vote.winner.code,
+        label: friday.vote.winner.label,
+        slot: friday.vote.winner.slot,
+        svgGroupId: friday.vote.winner.svgGroupId,
+    } }) %}
+{% endif %}
+
 <div
     class="vote-panel"
-    {{ stimulus_controller('accessory-vote', {
-        options: vote_options,
-        hasVoted: friday.visitorHasVoted,
-        votedAccessory: friday.votedAccessoryCode ?? '',
-        open: friday.vote.open,
-        closesAt: friday.vote.closesAt,
-        winner: friday.vote.winner ? {
-            code: friday.vote.winner.code,
-            label: friday.vote.winner.label,
-            slot: friday.vote.winner.slot,
-            svgGroupId: friday.vote.winner.svgGroupId,
-        } : {},
-        resultsSequence: friday.vote.resultsSequence,
-        votesUrl: path('api_friday_accessory_votes'),
-        mercureUrl: mercure(mercureTopic),
-    }) }}
+    {{ stimulus_controller('accessory-vote', vote_args) }}
 >
     <h2>Accessoire du vendredi</h2>
     <p class="hint" data-accessory-vote-target="countdown"></p>

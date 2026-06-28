@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { SequenceBarrier } from '../../assets/duck/state/sequenceBarrier.ts';
-import { parseResultsMessage, parseWinnerMessage } from '../../assets/duck/realtime/accessoryMessages.ts';
+import { parseResultsMessage, parseWinnerMessage, readWinner } from '../../assets/duck/realtime/accessoryMessages.ts';
 import { canVote, leaderCode, percentage, voteMode } from '../../assets/duck/vote/voteUiState.ts';
 import { postVote } from '../../assets/duck/vote/voteClient.ts';
 
@@ -30,6 +30,17 @@ describe('accessory message parsers (§24.5)', () => {
     expect(parseWinnerMessage(raw)).toEqual({ code: 'cto_glasses', label: 'CTO', slot: 'head', svgGroupId: 'accessory-cto-glasses' });
     expect(parseWinnerMessage(JSON.stringify({ winner: { code: 'x' } }))).toBeNull();
     expect(parseResultsMessage('not json')).toBeNull();
+  });
+
+  // Garde-fou « pas de gagnant » : Twig OMET la value `winner` tant qu'aucun
+  // accessoire n'a gagné, donc Stimulus retombe sur sa valeur Object par défaut
+  // `{}`. readWinner doit lire ce cas (et un tableau vide `[]`, forme produite
+  // par un json_encode d'array PHP vide) comme « pas de gagnant », JAMAIS comme
+  // un gagnant aux champs blancs. Empêche la régression du décodage Stimulus.
+  it('treats the empty default value as "no winner"', () => {
+    expect(readWinner({})).toBeNull();
+    expect(readWinner([] as unknown as Record<string, unknown>)).toBeNull();
+    expect(readWinner({ code: '', label: '', slot: '', svgGroupId: '' })).toEqual({ code: '', label: '', slot: '', svgGroupId: '' });
   });
 });
 
