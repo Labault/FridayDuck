@@ -59,7 +59,7 @@ x-app-env: &app-env
 services:
   app:
     image: *app-image
-    container_name: canard_app
+    container_name: duck_app
     build:
       context: .
       # Image prod = stage `frankenphp_prod` du Dockerfile multi-stage (base
@@ -94,7 +94,7 @@ services:
 
   worker:
     image: *app-image
-    container_name: canard_worker
+    container_name: duck_worker
     restart: unless-stopped
     depends_on:
       database:
@@ -126,7 +126,7 @@ services:
 
   relay:
     image: *app-image
-    container_name: canard_relay
+    container_name: duck_relay
     restart: unless-stopped
     depends_on:
       database:
@@ -148,7 +148,7 @@ services:
 
   database:
     image: postgres:${POSTGRES_VERSION:-17}-alpine
-    container_name: canard_db
+    container_name: duck_db
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-app}
@@ -175,8 +175,8 @@ volumes:
   database_data:
 
 networks:
-  # Réseau partagé du VPS : le Caddy global y joint `canard_app` (reverse_proxy
-  # canard_app:80). DOIT préexister : `docker network create web` (une fois).
+  # Réseau partagé du VPS : le Caddy global y joint `duck_app` (reverse_proxy
+  # duck_app:80). DOIT préexister : `docker network create web` (une fois).
   web:
     external: true
     name: web
