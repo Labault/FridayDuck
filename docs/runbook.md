@@ -227,7 +227,7 @@ docker compose --env-file .env.prod.local -f compose.prod.yaml exec -T database 
 ### Smoke test post-déploiement
 
 ```bash
-./scripts/smoke-test.sh https://canard.labault.dev
+./scripts/smoke-test.sh https://tibec.labault.dev
 ```
 
 `/health` vert, `/api/friday/current` cohérent avec l'horloge réelle (preuve
@@ -237,7 +237,7 @@ qu'`APP_FAKE_NOW` n'est pas figé), hub Mercure joignable en HTTPS.
 
 1. Le **worker** tourne-t-il ? `compose ps worker` ; sinon `compose up -d worker`.
 2. `MERCURE_PUBLIC_URL` est-il bien l'URL **HTTPS publique** (pas un nom interne) ?
-3. Hub joignable de l'extérieur : `curl -N https://canard.labault.dev/.well-known/mercure?topic=x`
+3. Hub joignable de l'extérieur : `curl -N https://tibec.labault.dev/.well-known/mercure?topic=x`
    doit rendre `200 text/event-stream`. Sinon : certificat Caddy, JWT, réseau.
 4. L'outbox conserve tout : au rétablissement, le relais republie (rien n'est perdu).
 

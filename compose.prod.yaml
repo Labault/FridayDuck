@@ -1,37 +1,54 @@
 # Le Canard du Vendredi — stack de PRODUCTION (§31).
 #
+# MODÈLE VPS : un Caddy GLOBAL EXTERNE (≈ ~/proxy-global) termine le TLS et
+# reverse-proxy chaque app via le réseau Docker partagé `web`. L'app n'a donc
+# AUCUNE responsabilité TLS : FrankenPHP écoute en HTTP plain sur `:80`,
+# joignable UNIQUEMENT depuis `web` (aucun port publié sur l'hôte). Aligné sur
+# Red Flag Bingo, qui tourne déjà sur ce VPS derrière le même proxy.
+#
 # Lancé par `deploy.sh` (push-to-deploy) :
 #   docker compose --env-file .env.prod.local -f compose.prod.yaml up -d
 #
 # Les SECRETS viennent du fichier d'interpolation `.env.prod.local` (gitignoré,
-# créé sur le VPS à partir de `.env.prod.dist`). C'est l'INJECTION RUNTIME : rien
-# n'est gravé dans l'image (§27.6). Ce fichier n'est PAS le `.env` de Symfony —
-# c'est l'env-file d'interpolation de Compose, donc aucune collision.
+# créé sur le VPS depuis `.env.prod.local.dist`). C'est l'INJECTION RUNTIME :
+# rien n'est gravé dans l'image (§27.6). Ce fichier n'est PAS le `.env` de
+# Symfony — c'est l'env-file d'interpolation de Compose, donc aucune collision.
 #
-# Trois services :
-#   app      — FrankenPHP (web + hub Mercure co-localisé), TLS Let's Encrypt auto.
-#   database — PostgreSQL persistant.
-#   worker   — `messenger:consume` : relais outbox + étapes de cycle + diagnostics.
-#              SANS lui, un café est committé mais jamais publié sur Mercure (§20.6).
+# Quatre services :
+#   app       — FrankenPHP (web + hub Mercure co-localisé), HTTP :80 derrière le
+#               Caddy global. PAS de TLS ici.
+#   database  — PostgreSQL persistant, AUCUN port exposé (réseau interne only).
+#   worker    — `messenger:consume scheduler_default async` : DÉCLENCHE le cycle
+#               (crons → redispatch RunCycleStep sur `async`, §25.4), TRAITE
+#               `async` (RunCycleStep avec retries → failed), et fait tourner le
+#               FILET récurrent 1 min (RelayOutbox + EmitDiagnostics).
+#   relay     — boucle `app:outbox:relay` : relais BAS-LATENCE de l'outbox vers
+#               Mercure (temps réel café/vote). Le worker seul ne publierait
+#               qu'au filet 1 min ; SANS worker NI relay, rien ne part (§20.6).
+#               → cf. note « Topologie Messenger » en bas de fichier.
 name: friday-duck-prod
 
-x-app-image: &app-image friday-duck/app:${APP_IMAGE_TAG:-latest}
+x-app-image: &app-image friday-duck/app:latest
 
-# Environnement partagé app + worker (même image, même config métier).
+# Environnement partagé app + worker + relay (même image, même config métier).
 x-app-env: &app-env
   # APP_ENV est déjà figé dans l'image (.env.local.php) ; on le réaffirme pour
   # lever toute ambiguïté. APP_FAKE_NOW est VOLONTAIREMENT ABSENT (§7.4).
   APP_ENV: prod
-  APP_SECRET: ${APP_SECRET:?APP_SECRET manquant (voir .env.prod.dist)}
+  APP_SECRET: ${APP_SECRET:?APP_SECRET manquant (voir .env.prod.local.dist)}
   # APP_VERSION n'est PAS injecté au runtime : c'est une propriété de l'IMAGE,
   # gravée au build (ARG APP_VERSION) et lue au runtime depuis l'ENV de l'image.
   # Ainsi /health reflète la version réellement déployée, y compris après rollback.
-  DEFAULT_URI: ${DEFAULT_URI:?DEFAULT_URI manquant}
+  # Domaine public, SOURCE UNIQUE : on en dérive DEFAULT_URI et MERCURE_PUBLIC_URL
+  # (un seul nom à renseigner sur le VPS → pas de typo entre deux URLs).
+  DEFAULT_URI: https://${APP_DOMAIN:?APP_DOMAIN manquant (voir .env.prod.local.dist)}
   DATABASE_URL: ${DATABASE_URL:?DATABASE_URL manquant}
-  # URL INTERNE de publication (vhost app:80, HTTP) — l'app et le worker publient ici.
+  # URL INTERNE de publication (vhost app:80, HTTP) — l'app, le worker ET le
+  # relais publient ici, sans repasser par le Caddy global (pas de hairpin TLS).
   MERCURE_URL: ${MERCURE_URL:-http://app/.well-known/mercure}
-  # URL PUBLIQUE HTTPS RÉELLE jointe par l'EventSource du navigateur.
-  MERCURE_PUBLIC_URL: ${MERCURE_PUBLIC_URL:?MERCURE_PUBLIC_URL manquant}
+  # URL PUBLIQUE HTTPS RÉELLE jointe par l'EventSource du navigateur (servie par
+  # le Caddy global). MÊME origine que le site → aucun CORS à configurer.
+  MERCURE_PUBLIC_URL: https://${APP_DOMAIN:?APP_DOMAIN manquant}/.well-known/mercure
   MERCURE_JWT_SECRET: ${MERCURE_JWT_SECRET:?MERCURE_JWT_SECRET manquant}
   MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_KEY:?MERCURE_PUBLISHER_JWT_KEY manquant}
   MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_KEY:?MERCURE_SUBSCRIBER_JWT_KEY manquant}
@@ -42,8 +59,12 @@ x-app-env: &app-env
 services:
   app:
     image: *app-image
+    container_name: canard_app
     build:
       context: .
+      # Image prod = stage `frankenphp_prod` du Dockerfile multi-stage (base
+      # PARTAGÉE avec le dev → zéro drift, cf. CLAUDE.md). On NE scinde donc PAS
+      # en Dockerfile.prod : le stage cible suffit et garde une seule source.
       target: frankenphp_prod
       args:
         APP_VERSION: ${APP_VERSION:-0.0.0-dev}
@@ -53,47 +74,44 @@ services:
         condition: service_healthy
     environment:
       <<: *app-env
-      # Domaine public (TLS auto Let's Encrypt) + vhost interne app:80 (HTTP) pour
-      # la publication Mercure co-localisée. Caddy persiste les certifs dans /data.
-      SERVER_NAME: "${SERVER_NAME:-canard.labault.dev}, app:80"
-      # Options globales Caddy (ex. `email …` pour les avis d'expiration ACME).
-      CADDY_GLOBAL_OPTIONS: ${CADDY_GLOBAL_OPTIONS:-}
+      # Le Caddy global termine le TLS : FrankenPHP écoute en HTTP plain sur :80.
+      # `:80` matche TOUS les hosts (tibec.labault.dev via le proxy, `app`/
+      # `localhost` en interne pour la sonde et la publication Mercure). AUCUNE
+      # gestion ACME/Let's Encrypt ici (c'est le rôle du Caddy global).
+      SERVER_NAME: ":80"
     healthcheck:
-      # Sonde métier 3 couches (/health → 503 si la base ne répond pas).
-      # Vise le vhost interne `app:80` (le domaine public n'écoute qu'en HTTPS et
-      # `localhost` n'est pas un vhost en prod). file_get_contents renvoie false
-      # sur 503/redirection → le conteneur passe unhealthy.
+      # Sonde métier 3 couches (/health → 503 si la base ne répond pas), via le
+      # vhost interne HTTP. file_get_contents renvoie false sur 503 → unhealthy.
       test: ["CMD", "php", "-r", "exit(@file_get_contents('http://app/health') === false ? 1 : 0);"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 60s
-    ports:
-      # Défauts prod 80/443 (ACME HTTP-01 exige le 80 joignable). Surchargeables
-      # pour une répétition locale qui ne peut pas prendre les ports privilégiés.
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
-      - "${HTTPS_PORT:-443}:443/udp"
-    volumes:
-      # Certificats TLS + état Caddy : DOIT persister (sinon re-émission à chaque
-      # déploiement → risque de rate-limit Let's Encrypt).
-      - caddy_data:/data
-      - caddy_config:/config
+    # PAS de `ports:` — l'app n'est joignable que par le Caddy global via `web`.
+    networks:
+      - web
+      - internal
 
   worker:
     image: *app-image
+    container_name: canard_worker
     restart: unless-stopped
     depends_on:
       database:
         condition: service_healthy
-      # Garantit que l'image est construite (le worker ne la build pas lui-même).
+      # App saine = image construite + hub Mercure joignable pour la publication.
       app:
-        condition: service_started
+        condition: service_healthy
     environment:
       <<: *app-env
-    # Worker temps réel + cycle : génère les messages planifiés (scheduler_default)
-    # ET consomme la file async (RelayOutbox, RunCycleStep, EmitDiagnostics).
-    # Recyclage périodique (mémoire/temps) — services stateless obligent (§22.2).
+    # Pas de serveur web ici : la sonde HTTP de l'image ne s'applique pas.
+    healthcheck:
+      disable: true
+    # Worker temps réel + cycle : DÉCLENCHE les messages planifiés
+    # (`scheduler_default` : crons → redispatch RunCycleStep sur `async`, plus le
+    # filet 1 min RelayOutbox + EmitDiagnostics traité EN LIGNE) ET consomme la
+    # file `async` (RunCycleStep avec retries → failed, §25.4). Recyclage
+    # périodique (mémoire/temps) — services stateless obligent (§22.2).
     command:
       - php
       - bin/console
@@ -103,24 +121,65 @@ services:
       - "--time-limit=3600"
       - "--memory-limit=128M"
       - "-v"
+    networks:
+      - internal
+
+  relay:
+    image: *app-image
+    container_name: canard_relay
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    # Relais BAS-LATENCE de l'outbox (§20.6) : publie en boucle les lignes non
+    # publiées vers Mercure (race-safe, idempotent). C'est lui qui donne le
+    # temps réel sub-seconde du café/vote ; le filet 1 min du worker n'est qu'un
+    # rattrapage. `|| true` : une publication en échec est laissée non publiée et
+    # rejouée au tour suivant (jamais de crash-loop). `sh -c` court-circuite
+    # l'entrypoint (migrations) — `depends_on app healthy` garantit la base prête.
+    entrypoint: ["sh", "-c"]
+    command: ["while true; do php bin/console app:outbox:relay >/dev/null 2>&1 || true; sleep 1; done"]
+    networks:
+      - internal
 
   database:
     image: postgres:${POSTGRES_VERSION:-17}-alpine
+    container_name: canard_db
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-app}
       POSTGRES_USER: ${POSTGRES_USER:-app}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant (voir .env.prod.dist)}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant (voir .env.prod.local.dist)}
     healthcheck:
       test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+    # AUCUN port exposé : la base n'est joignable que via le réseau `internal`.
     volumes:
       - database_data:/var/lib/postgresql/data:rw
+    networks:
+      - internal
 
+# Volumes — SEUL l'état durable est persisté : la base. Le cache prod est gravé
+# dans l'image (recompilé à chaque déploiement) ; les logs sortent sur stderr
+# (capturés par Docker). On NE monte donc PAS /app/var : un volume y masquerait
+# le cache de l'image (opcache.validate_timestamps=0 → cache STALE après deploy).
+# Pas de volume Caddy non plus : sans TLS, le hub n'a aucun certificat à garder.
 volumes:
-  caddy_data:
-  caddy_config:
   database_data:
+
+networks:
+  # Réseau partagé du VPS : le Caddy global y joint `canard_app` (reverse_proxy
+  # canard_app:80). DOIT préexister : `docker network create web` (une fois).
+  web:
+    external: true
+    name: web
+  # Réseau privé app ↔ db ↔ worker ↔ relay (publication Mercure interne incluse).
+  internal:
+    driver: bridge

@@ -9,7 +9,7 @@
 #   1. dump PostgreSQL pré-migration              (filet base)
 #   2. build de l'image prod                       (assets + .env.local.php)
 #   3. base up + migrations Doctrine (gate)        (--all-or-nothing)
-#   4. app + worker up
+#   4. app + worker + relay up
 #   5. HEALTHCHECK HTTP BLOQUANT                    (rouge → rollback auto + exit 1)
 #
 # Idempotent et sûr à rejouer. NE bascule JAMAIS le trafic avant un /health vert.
@@ -31,7 +31,7 @@ err()  { printf '\033[1;31m✗ %s\033[0m\n' "$*" >&2; }
 compose() { docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"; }
 
 if [ ! -f "$ENV_FILE" ]; then
-  err "Fichier de secrets '$ENV_FILE' absent. Sur le VPS : cp .env.prod.dist $ENV_FILE puis renseigner les secrets."
+  err "Fichier de secrets '$ENV_FILE' absent. Sur le VPS : cp .env.prod.local.dist $ENV_FILE puis renseigner les secrets."
   exit 1
 fi
 
@@ -53,7 +53,7 @@ rollback() {
   err "Déploiement ÉCHOUÉ — rollback en cours…"
   if [ "$ROLLBACK_AVAILABLE" = 1 ]; then
     docker tag "${IMAGE}:rollback" "${IMAGE}:latest"
-    compose up -d --no-build app worker
+    compose up -d --no-build app worker relay
     err "Rollback effectué : image précédente redéployée. Inspecter les logs (compose logs app)."
   else
     err "Aucune image de rollback (premier déploiement) — stack laissée arrêtée. Corriger puis redéployer."
@@ -98,9 +98,9 @@ if ! compose run --rm --no-deps app php bin/console doctrine:migrations:migrate 
 fi
 ok "Migrations appliquées."
 
-# ── 4. Mise en service : app (web + hub Mercure) + worker ─────────────────────
-log "Démarrage de l'application et du worker…"
-compose up -d app worker
+# ── 4. Mise en service : app (web + hub Mercure) + worker + relais outbox ─────
+log "Démarrage de l'application, du worker et du relais…"
+compose up -d app worker relay
 
 # ── 5. HEALTHCHECK HTTP BLOQUANT (/health 3 couches, base incluse) ────────────
 log "Attente du healthcheck (/health) — timeout ${HEALTH_TIMEOUT}s…"

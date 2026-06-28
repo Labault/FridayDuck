@@ -10,7 +10,7 @@
 #          SMOKE_INSECURE=1 ./scripts/smoke-test.sh https://canard.localhost   (répétition locale, CA interne Caddy)
 set -euo pipefail
 
-BASE_URL="${1:-https://canard.labault.dev}"
+BASE_URL="${1:-https://tibec.labault.dev}"
 # SMOKE_INSECURE=1 → accepte un certificat non vérifié (CA interne Caddy, répétition locale).
 INSECURE=()
 [ "${SMOKE_INSECURE:-0}" = 1 ] && INSECURE=(-k)
@@ -47,7 +47,7 @@ fi
 # on lit le code HTTP via -w, pas via le statut de curl.
 read -r code ctype < <(
   curl -sS -N "${INSECURE[@]}" -o /dev/null -w '%{http_code} %{content_type}\n' --max-time 4 \
-    "$BASE_URL/.well-known/mercure?topic=https://canard.labault.dev/smoke" 2>/dev/null || true
+    "$BASE_URL/.well-known/mercure?topic=https://tibec.labault.dev/smoke" 2>/dev/null || true
 )
 case "${code:-000}-${ctype:-}" in
   200-text/event-stream*) pass "Mercure HTTPS joignable (200, text/event-stream)" ;;

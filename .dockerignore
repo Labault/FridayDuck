@@ -12,7 +12,7 @@ node_modules/
 .env.local
 .env.*.local
 # Modèle de secrets pour le VPS (env-file Compose) — pas nécessaire dans l'image.
-.env.prod.dist
+.env.prod.local.dist
 .php-cs-fixer.cache
 .phpunit.cache/
 compose*.yaml
