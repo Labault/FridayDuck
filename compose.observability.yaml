@@ -1,0 +1,94 @@
+# Stack d'observabilité LOCAL (Phase 7b, §21) — SÉPARÉ de l'app.
+#
+# Reçoit l'OTLP émis par l'app (OTEL_EXPORTER_OTLP_ENDPOINT → otel-collector:4318)
+# et le ventile : traces → Tempo, métriques → Prometheus (scrape de l'exporter
+# Prometheus du Collector), logs → Loki. Grafana provisionne les datasources avec
+# la corrélation trace ↔ logs.
+#
+# Démarrage :  docker compose -f compose.observability.yaml up -d
+# Grafana :    http://localhost:3000  (anonyme, Admin)
+#
+# L'app pointe son OTLP sur ce stack via le réseau partagé `friday-duck-observability`
+# (voir compose.yaml) ou, en local hors conteneur, sur http://localhost:4318.
+name: friday-duck-observability
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.123.0
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP (cible par défaut de l'app)
+      - "8889:8889"   # /metrics exposé pour Prometheus
+    networks: [observability]
+    depends_on: [tempo, loki]
+
+  tempo:
+    image: grafana/tempo:2.7.1
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    networks: [observability]
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-remote-write-receiver"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus-rules.yml:/etc/prometheus/rules.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks: [observability]
+    depends_on: [alertmanager]
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.0
+    restart: unless-stopped
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+    volumes:
+      - ./observability/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "9093:9093"
+    networks: [observability]
+
+  loki:
+    image: grafana/loki:3.4.2
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./observability/loki.yaml:/etc/loki/loki.yaml:ro
+      - loki_data:/loki
+    networks: [observability]
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    restart: unless-stopped
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_FEATURE_TOGGLES_ENABLE: "traceToMetrics"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    networks: [observability]
+    depends_on: [prometheus, tempo, loki]
+
+volumes:
+  tempo_data:
+  prometheus_data:
+  loki_data:
+
+networks:
+  observability:
+    name: friday-duck-observability

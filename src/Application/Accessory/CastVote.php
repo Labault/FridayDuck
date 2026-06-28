@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Application\Accessory;
 
+use App\Application\RealTime\AccessoryResultsUpdated;
+use App\Application\RealTime\DomainEventPublisher;
+use App\Application\Telemetry\Metrics;
+use App\Application\Telemetry\Tracer;
 use App\Domain\Accessory\Accessory;
 use App\Domain\Accessory\AccessoryVote;
 use App\Domain\Accessory\AccessoryVoteRepository;
@@ -37,10 +41,29 @@ final readonly class CastVote
         private AccessoryVoteRepository $accessoryVoteRepository,
         private IdentifierGenerator $identifierGenerator,
         private ClockInterface $clock,
+        private DomainEventPublisher $domainEventPublisher,
+        private AccessoryOptionsReader $accessoryOptionsReader,
+        private Tracer $tracer,
+        private Metrics $metrics,
     ) {
     }
 
     public function cast(
+        \DateTimeImmutable $fridayDate,
+        string $timezone,
+        string $visitorId,
+        Accessory $accessory,
+    ): AccessoryVoteResult {
+        return $this->tracer->trace('accessory.vote.cast', ['friday.date' => $fridayDate->format('Y-m-d')], function () use ($fridayDate, $timezone, $visitorId, $accessory): AccessoryVoteResult {
+            $accessoryVoteResult = $this->castInTransaction($fridayDate, $timezone, $visitorId, $accessory);
+            // Métrique métier à la mutation (§26.4), sur vote ACCEPTÉ uniquement.
+            $this->metrics->counter('duck.accessory.vote.total');
+
+            return $accessoryVoteResult;
+        });
+    }
+
+    private function castInTransaction(
         \DateTimeImmutable $fridayDate,
         string $timezone,
         string $visitorId,
@@ -74,8 +97,31 @@ final readonly class CastVote
             $edition->recordAccessoryVote();
             $this->fridayEditionRepository->save($edition);
 
+            // Résultats diffusés via l'OUTBOX, DANS cette transaction (invariant A) :
+            // le snapshot (compteurs à jour, options déjà flushées) et la séquence
+            // anti-régression. La publication Mercure est différée au relais (6b).
+            $this->domainEventPublisher->publish(
+                $fridayDate,
+                new AccessoryResultsUpdated($edition->resultsSequence(), $this->resultsSnapshot($edition->id())),
+            );
+
             return new AccessoryVoteResult($accessoryVote->id(), $edition->resultsSequence());
         });
+    }
+
+    /**
+     * @return list<array{code: string, displayOrder: int, voteCount: int}>
+     */
+    private function resultsSnapshot(string $fridayEditionId): array
+    {
+        return array_map(
+            static fn (AccessoryOptionView $accessoryOptionView): array => [
+                'code' => $accessoryOptionView->code,
+                'displayOrder' => $accessoryOptionView->displayOrder,
+                'voteCount' => $accessoryOptionView->voteCount,
+            ],
+            $this->accessoryOptionsReader->forEdition($fridayEditionId),
+        );
     }
 
     private function matchOption(string $fridayEditionId, string $accessoryId): FridayAccessoryOption

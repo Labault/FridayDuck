@@ -37,7 +37,7 @@ abstract class DatabaseTestCase extends KernelTestCase
             // Le catalogue `accessory` (seedé par migration) est PRÉSERVÉ ; seules
             // les tables par-édition/visiteur sont vidées.
             $this->connection->executeStatement(
-                'TRUNCATE weekly_report, processed_message, advice_reaction, accessory_vote, friday_accessory_option, coffee_contribution, friday_visit, friday_edition, anonymous_visitor RESTART IDENTITY CASCADE',
+                'TRUNCATE outbox, weekly_report, processed_message, advice_reaction, accessory_vote, friday_accessory_option, coffee_contribution, friday_visit, friday_edition, anonymous_visitor RESTART IDENTITY CASCADE',
             );
         } catch (\Throwable $exception) {
             self::markTestSkipped('Base de test indisponible ou non migrée : '.$exception->getMessage());

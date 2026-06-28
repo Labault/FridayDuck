@@ -1,0 +1,117 @@
+# Stack e2e (Phase 8a) — la stack APPLICATIVE RÉELLE pour Playwright.
+#
+# Trois instances d'app à horloge FIXE (APP_FAKE_NOW) pour le déterminisme
+# temporel + le RELAIS outbox actif (sans lui, un café est committé mais jamais
+# diffusé → l'assertion cross-onglets échouerait pour une raison d'INFRA, pas de
+# code : le worker fait partie du système sous test).
+#
+# Choix clés :
+#   - APP_ENV=preprod : l'horloge configurable HONORE APP_FAKE_NOW (en `prod` elle
+#     serait neutralisée, §7.4). Le front servi est le build vite PROD (Studio
+#     tree-shaké, §15.4) → `npm run build` AVANT `docker build` (voir e2e:up).
+#   - Base e2e ISOLÉE (app_e2e) — ni app_test (PHPUnit) ni la base partagée.
+#   - Hub Mercure co-localisé dans app-friday ; le relais y publie ; les onglets
+#     s'y abonnent (cross-onglets sur app-friday).
+#
+# Lancer :  npm run e2e:up && npm run e2e && npm run e2e:down
+name: friday-duck-e2e
+
+x-app-base: &app-base
+  build:
+    context: .
+    target: frankenphp_prod
+  depends_on:
+    database-e2e:
+      condition: service_healthy
+  environment: &app-env
+    APP_ENV: preprod
+    APP_DEBUG: "0"
+    APP_SECRET: e2e-secret-not-for-prod
+    DATABASE_URL: "postgresql://app:e2e@database-e2e:5432/app_e2e?serverVersion=17&charset=utf8"
+    DEFAULT_URI: http://localhost
+    MERCURE_JWT_SECRET: "!ChangeThisMercureHubJWTSecretKey!"
+    MERCURE_PUBLISHER_JWT_KEY: "!ChangeThisMercureHubJWTSecretKey!"
+    MERCURE_SUBSCRIBER_JWT_KEY: "!ChangeThisMercureHubJWTSecretKey!"
+    OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  healthcheck:
+    test: ["CMD", "php", "-r", "exit(@file_get_contents('http://localhost/health') === false ? 1 : 0);"]
+    interval: 5s
+    timeout: 5s
+    retries: 20
+    start_period: 30s
+  restart: unless-stopped
+
+services:
+  database-e2e:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: app_e2e
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: e2e
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "app_e2e", "-U", "app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [e2e]
+
+  # Vendredi AVANT 14:00 : café, vote ouvert, réactions, cross-onglets, a11y.
+  app-friday:
+    <<: *app-base
+    environment:
+      <<: *app-env
+      SERVER_NAME: ":80"
+      APP_FAKE_NOW: "2026-07-03T10:00:00+02:00"
+      MERCURE_URL: "http://app-friday/.well-known/mercure"
+      MERCURE_PUBLIC_URL: "http://localhost:8081/.well-known/mercure"
+      MERCURE_EXTRA_DIRECTIVES: "anonymous\ncors_origins http://localhost:8081"
+    ports: ["8081:80"]
+    networks: [e2e]
+
+  # Vendredi APRÈS 14:00 : vote fermé, gagnant, late-join.
+  app-afternoon:
+    <<: *app-base
+    environment:
+      <<: *app-env
+      SERVER_NAME: ":80"
+      APP_FAKE_NOW: "2026-07-03T15:00:00+02:00"
+      MERCURE_URL: "http://app-afternoon/.well-known/mercure"
+      MERCURE_PUBLIC_URL: "http://localhost:8082/.well-known/mercure"
+      MERCURE_EXTRA_DIRECTIVES: "anonymous\ncors_origins http://localhost:8082"
+    ports: ["8082:80"]
+    networks: [e2e]
+
+  # NON-vendredi : DORMANT.
+  app-dormant:
+    <<: *app-base
+    environment:
+      <<: *app-env
+      SERVER_NAME: ":80"
+      APP_FAKE_NOW: "2026-06-30T10:00:00+02:00"
+      MERCURE_URL: "http://app-dormant/.well-known/mercure"
+      MERCURE_PUBLIC_URL: "http://localhost:8083/.well-known/mercure"
+      MERCURE_EXTRA_DIRECTIVES: "anonymous\ncors_origins http://localhost:8083"
+    ports: ["8083:80"]
+    networks: [e2e]
+
+  # RELAIS outbox — partie du système sous test. Publie sur le hub d'app-friday
+  # (où se jouent les scénarios cross-onglets). Boucle courte pour une latence e2e.
+  relay:
+    <<: *app-base
+    depends_on:
+      database-e2e:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+      APP_FAKE_NOW: "2026-07-03T10:00:00+02:00"
+      DEFAULT_URI: http://localhost
+      MERCURE_URL: "http://app-friday/.well-known/mercure"
+    entrypoint: ["sh", "-c"]
+    command: ["while true; do php bin/console app:outbox:relay >/dev/null 2>&1 || true; sleep 1; done"]
+    healthcheck:
+      disable: true # pas de serveur web : la sonde HTTP de x-app-base ne s'applique pas.
+    networks: [e2e]
+
+networks:
+  e2e:
+    name: friday-duck-e2e

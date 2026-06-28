@@ -40,8 +40,13 @@ final readonly class CloseFriday
             }
         });
 
-        if ($this->processedMessageGuard->markIfFirst(CycleKey::fridayClose($fridayDate))) {
-            $this->domainEventPublisher->publish($fridayDate, new FridayClosed($fridayDate->format('Y-m-d')));
-        }
+        // §25.4 — Dédup + annonce atomiques (cf. OpenFriday) : sous async+retry, un
+        // échec de publication rejoue proprement, exactement-une-fois préservé. La
+        // progression du STATUT (ci-dessus) est idempotente et séparée.
+        $this->transactional->transactional(function () use ($fridayDate): void {
+            if ($this->processedMessageGuard->markIfFirst(CycleKey::fridayClose($fridayDate))) {
+                $this->domainEventPublisher->publish($fridayDate, new FridayClosed($fridayDate->format('Y-m-d')));
+            }
+        });
     }
 }

@@ -1,0 +1,75 @@
+{
+  "uid": "friday-duck-metier",
+  "title": "Le Canard du Vendredi — Métier",
+  "tags": ["friday-duck", "metier"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Vendredi actif (horloge)",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "duck_clock_friday_active", "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "mappings": [{ "type": "value", "options": { "0": { "text": "Dormant" }, "1": { "text": "AWAKE" } } }] }, "overrides": [] },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Énergie (0–100)",
+      "gridPos": { "h": 6, "w": 12, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "duck_energy", "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "min": 0, "max": 100 }, "overrides": [] }, "options": {}
+    },
+    {
+      "id": 3, "type": "stat", "title": "Visiteurs uniques",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "duck_friday_unique_visitors", "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 4, "type": "stat", "title": "Cafés (total)",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "duck_coffee_total", "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Vitesse de progression (cafés/s)",
+      "gridPos": { "h": 6, "w": 12, "x": 6, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "rate(duck_coffee_total[5m])", "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": {}
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "État du canard",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "duck_energy_state", "legendFormat": "{{state}}", "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": {}
+    },
+    {
+      "id": 7, "type": "timeseries", "title": "Vote — total des votes & gagnant figé",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "duck_accessory_vote_total", "legendFormat": "votes", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "duck_accessory_winner", "legendFormat": "gagnant {{accessory}}", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": {}
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Conseil — réactions (total) & surcaféination",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "duck_advice_reaction_total", "legendFormat": "réactions", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "duck_overcaffeination_total", "legendFormat": "surcaféination", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": {}
+    }
+  ]
+}

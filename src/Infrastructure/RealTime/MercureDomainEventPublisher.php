@@ -12,12 +12,14 @@ use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Mercure\Update;
 
 /**
- * Implémentation Mercure du port (§20). Publie un Update PUBLIC sur le topic de
- * l'édition : `{ type, …payload }` (§24.5). Abonnement anonyme, état global
- * uniquement (invariant B).
+ * SUPERSÉDÉ en Phase 6b : le port pointe désormais sur
+ * {@see OutboxDomainEventPublisher} (écriture transactionnelle) ; la publication
+ * Mercure passe par {@see MercureRealTimeTransport} (côté relais). Conservé NON
+ * CÂBLÉ le temps de la bascule (§20.6) — retirer une fois la transition stabilisée.
  *
- * Best-effort : toute défaillance du hub est journalisée et AVALÉE — jamais
- * propagée (l'état est déjà committé ; le temps réel est transient, §20.6).
+ * Implémentation Mercure best-effort historique : publie un Update PUBLIC sur le
+ * topic de l'édition (`{ type, …payload }`, §24.5), défaillance du hub journalisée
+ * et avalée.
  */
 final readonly class MercureDomainEventPublisher implements DomainEventPublisher
 {

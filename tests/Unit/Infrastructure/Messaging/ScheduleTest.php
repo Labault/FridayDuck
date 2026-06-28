@@ -19,9 +19,14 @@ final class ScheduleTest extends TestCase
 {
     private const string TZ = 'Europe/Paris';
 
-    public function testRegistersTheSevenCycleSteps(): void
+    public function testRegistersTheSevenCycleStepsAndTheOutboxRelay(): void
     {
-        self::assertCount(7, $this->schedule()->getSchedule()->getRecurringMessages());
+        // 7 étapes de cycle (§25.1) + relais d'outbox (6b) + tick de diagnostic (7c).
+        self::assertCount(9, $this->schedule()->getSchedule()->getRecurringMessages());
+
+        foreach (['55 23 * * 4', '0 0 * * 5', '0 14 * * 5', '1 14 * * 5', '55 23 * * 5', '0 0 * * 6', '5 0 * * 6'] as $cron) {
+            $this->triggerFor($cron); // échoue si le cron de cycle manque
+        }
     }
 
     /**

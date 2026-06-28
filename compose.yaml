@@ -39,6 +39,12 @@ services:
       # Recharge à chaud du worker en dev (cf. Dockerfile frankenphp_dev).
       FRANKENPHP_WORKER_CONFIG: watch
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      # Télémétrie (§26) : VIDE = désactivée. Pour la vérif locale, pointer sur le
+      # Collector du stack d'observabilité (compose.observability.yaml), joignable
+      # via le port publié sur l'hôte :
+      #   OTEL_EXPORTER_OTLP_ENDPOINT=http://host.docker.internal:4318 make up
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+      OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-friday-duck}
     volumes:
       - ./:/app
       - ./frankenphp/Caddyfile:/etc/frankenphp/Caddyfile:ro

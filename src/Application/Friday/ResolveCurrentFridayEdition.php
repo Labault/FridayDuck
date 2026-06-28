@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Friday;
 
+use App\Application\Telemetry\Tracer;
 use App\Domain\Friday\FridayEdition;
 use App\Domain\Friday\FridayEditionRepository;
 use App\Domain\Shared\Clock\ClockInterface;
@@ -25,35 +26,46 @@ final readonly class ResolveCurrentFridayEdition
         private IdentifierGenerator $identifierGenerator,
         private ClockInterface $clock,
         private int $coffeeTarget,
+        // Optionnel : autowiré en prod (span friday.current.resolve), null en test
+        // (aucun changement des nombreux sites de construction existants).
+        private ?Tracer $tracer = null,
     ) {
     }
 
     public function resolve(\DateTimeImmutable $fridayDate, string $timezone): FridayEdition
     {
-        $existing = $this->fridayEditionRepository->findByFriday($fridayDate, $timezone);
-        if ($existing instanceof FridayEdition) {
-            return $existing;
-        }
-
-        $fridayEdition = FridayEdition::open(
-            $this->identifierGenerator->nextIdentifier(),
-            $fridayDate,
-            $timezone,
-            $this->coffeeTarget,
-            $this->clock->now(),
-        );
-
-        try {
-            $this->fridayEditionRepository->add($fridayEdition);
-
-            return $fridayEdition;
-        } catch (ConcurrentCreationException $exception) {
-            $winner = $this->fridayEditionRepository->findByFriday($fridayDate, $timezone);
-            if (!$winner instanceof FridayEdition) {
-                throw new \RuntimeException('Édition introuvable après une création concurrente.', $exception->getCode(), previous: $exception);
+        $work = function () use ($fridayDate, $timezone): FridayEdition {
+            $existing = $this->fridayEditionRepository->findByFriday($fridayDate, $timezone);
+            if ($existing instanceof FridayEdition) {
+                return $existing;
             }
 
-            return $winner;
+            $fridayEdition = FridayEdition::open(
+                $this->identifierGenerator->nextIdentifier(),
+                $fridayDate,
+                $timezone,
+                $this->coffeeTarget,
+                $this->clock->now(),
+            );
+
+            try {
+                $this->fridayEditionRepository->add($fridayEdition);
+
+                return $fridayEdition;
+            } catch (ConcurrentCreationException $exception) {
+                $winner = $this->fridayEditionRepository->findByFriday($fridayDate, $timezone);
+                if (!$winner instanceof FridayEdition) {
+                    throw new \RuntimeException('Édition introuvable après une création concurrente.', $exception->getCode(), previous: $exception);
+                }
+
+                return $winner;
+            }
+        };
+
+        if (!$this->tracer instanceof Tracer) {
+            return $work();
         }
+
+        return $this->tracer->trace('friday.current.resolve', ['friday.date' => $fridayDate->format('Y-m-d')], static fn (): FridayEdition => $work());
     }
 }

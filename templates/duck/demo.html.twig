@@ -60,6 +60,19 @@
                 <span class="state" data-duck-target="energyState">{{ friday.status }}</span>
             </div>
 
+            {# DORMANT (§13, §7.2) : hors vendredi, dire au visiteur quand le canard
+                revient. La date du prochain vendredi est fournie par le serveur
+                (friday.date, « Y-m-d ») — aucun calcul front. Le prochain jour actif
+                est par définition un VENDREDI, d'où le libellé littéral « vendredi » ;
+                jour/mois/année viennent de filtres `date` numériques (indépendants de
+                la locale), le nom du mois d'une table FR. #}
+            {% if not friday.active %}
+                {% set fr_months = {1: 'janvier', 2: 'février', 3: 'mars', 4: 'avril', 5: 'mai', 6: 'juin', 7: 'juillet', 8: 'août', 9: 'septembre', 10: 'octobre', 11: 'novembre', 12: 'décembre'} %}
+                <p class="hint duck-dormant" data-duck-target="nextFriday">
+                    De retour vendredi {{ friday.date|date('j') }} {{ fr_months[friday.date|date('n')] }} {{ friday.date|date('Y') }}
+                </p>
+            {% endif %}
+
             <button
                 type="button"
                 class="primary"

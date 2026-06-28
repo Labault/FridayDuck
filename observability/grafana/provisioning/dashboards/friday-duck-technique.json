@@ -1,0 +1,88 @@
+{
+  "uid": "friday-duck-technique",
+  "title": "Le Canard du Vendredi — Technique",
+  "tags": ["friday-duck", "technique"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Version déployée",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "count by (service_version) (target_info)", "legendFormat": "{{service_version}}", "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": { "reduceOptions": { "calcs": ["lastNotNull"], "fields": "" }, "textMode": "name" }
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Erreurs HTTP 5xx (req/s)",
+      "gridPos": { "h": 5, "w": 9, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(rate(http_server_request_count{http_response_status_code=~\"5..\"}[5m]))", "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": {}
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Latence HTTP p95 (s)",
+      "gridPos": { "h": 5, "w": 9, "x": 15, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_bucket[5m])) by (le))", "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }, "options": {}
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "Mémoire worker (octets)",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "worker_memory_bytes", "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] }, "options": {}
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "Publications Mercure (succès / échec)",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "rate(mercure_publish_count[5m])", "legendFormat": "succès/s", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "rate(mercure_publish_failure[5m])", "legendFormat": "échec/s", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": {}
+    },
+    {
+      "id": 6, "type": "timeseries", "title": "Backlog outbox & file d'échec Messenger",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "mercure_outbox_backlog", "legendFormat": "backlog outbox", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "messenger_failed_messages", "legendFormat": "messages en échec", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": {}
+    },
+    {
+      "id": 7, "type": "stat", "title": "Divergence horloge/statut & APP_FAKE_NOW",
+      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 11 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "duck_clock_status_divergence", "legendFormat": "divergence", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "duck_app_fake_now_active", "legendFormat": "APP_FAKE_NOW", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": { "mappings": [{ "type": "value", "options": { "0": { "text": "OK" }, "1": { "text": "ALERTE" } } }] }, "overrides": [] },
+      "options": { "colorMode": "background", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 8, "type": "timeseries", "title": "Santé front (échecs animation / reconnexions)",
+      "gridPos": { "h": 5, "w": 8, "x": 8, "y": 11 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "rate(duck_animation_init_failure[5m])", "legendFormat": "init échec/s", "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "rate(duck_mercure_reconnect_count[5m])", "legendFormat": "reconnexions/s", "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": {}
+    },
+    {
+      "id": 9, "type": "table", "title": "Café tracé bout-en-bout (Tempo)",
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "tempo", "uid": "tempo" },
+      "targets": [{ "refId": "A", "queryType": "traceql", "query": "{ span.friday.date != \"\" }", "limit": 20, "datasource": { "type": "tempo", "uid": "tempo" } }],
+      "fieldConfig": { "defaults": {}, "overrides": [] }, "options": {}
+    }
+  ]
+}

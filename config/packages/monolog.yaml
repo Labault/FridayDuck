@@ -53,3 +53,30 @@ when@prod:
                 channels: [deprecation]
                 path: php://stderr
                 formatter: monolog.formatter.json
+            # Phase 7a : pont vers OTLP — les logs émis dans un span portent
+            # trace_id/span_id (corrélation logs ↔ traces). Inerte si OTEL désactivé.
+            otel:
+                type: service
+                id: App\Infrastructure\Telemetry\OtelMonologHandler
+                channels: ["!event", "!doctrine", "!deprecation"]
+
+# Préproduction (e2e/observabilité, Phase 8b) : env PROD-LIKE qui honore l'horloge
+# simulée (APP_FAKE_NOW) tout en émettant les MÊMES signaux que la prod. Sans ce
+# bloc, preprod n'aurait aucun handler Monolog → AUCUN log OTLP (corrélation
+# logs ↔ traces invérifiable). Reprend le pont `otel` et la sortie stderr JSON.
+when@preprod:
+    monolog:
+        handlers:
+            nested:
+                type: stream
+                path: php://stderr
+                level: debug
+                formatter: monolog.formatter.json
+            console:
+                type: console
+                process_psr_3_messages: false
+                channels: ["!event", "!doctrine"]
+            otel:
+                type: service
+                id: App\Infrastructure\Telemetry\OtelMonologHandler
+                channels: ["!event", "!doctrine", "!deprecation"]

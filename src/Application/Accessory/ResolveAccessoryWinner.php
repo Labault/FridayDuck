@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Application\Accessory;
 
+use App\Application\Telemetry\Metrics;
+use App\Application\Telemetry\Tracer;
 use App\Domain\Accessory\AccessoryWinnerCalculator;
 use App\Domain\Friday\FridayEdition;
 use App\Domain\Friday\FridayEditionRepository;
@@ -27,10 +29,30 @@ final readonly class ResolveAccessoryWinner
         private Transactional $transactional,
         private FridayEditionRepository $fridayEditionRepository,
         private AccessoryOptionsReader $accessoryOptionsReader,
+        // Optionnels : autowirés en prod (span accessory.winner.resolve + métrique
+        // duck.accessory.winner), null en test.
+        private ?Tracer $tracer = null,
+        private ?Metrics $metrics = null,
     ) {
     }
 
     public function resolve(\DateTimeImmutable $fridayDate, string $timezone): AccessoryWinnerResolution
+    {
+        $work = fn (): AccessoryWinnerResolution => $this->resolveInTransaction($fridayDate, $timezone);
+
+        $resolution = $this->tracer instanceof Tracer
+            ? $this->tracer->trace('accessory.winner.resolve', ['friday.date' => $fridayDate->format('Y-m-d')], static fn (): AccessoryWinnerResolution => $work())
+            : $work();
+
+        // Métrique métier au PREMIER calcul (§26.4), pas sur une relecture immuable.
+        if ($resolution->justResolved) {
+            $this->metrics?->counter('duck.accessory.winner', 1, ['accessory' => $resolution->winnerCode]);
+        }
+
+        return $resolution;
+    }
+
+    private function resolveInTransaction(\DateTimeImmutable $fridayDate, string $timezone): AccessoryWinnerResolution
     {
         return $this->transactional->transactional(function () use ($fridayDate, $timezone): AccessoryWinnerResolution {
             $edition = $this->fridayEditionRepository->findByFridayForUpdate($fridayDate, $timezone);

@@ -1,0 +1,53 @@
+# OTel Collector (§21) : reçoit l'OTLP de l'app, ventile vers Tempo/Prometheus/Loki.
+# memory_limiter + batch : ingestion bornée et non bloquante côté backend.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  batch:
+    timeout: 5s
+
+exporters:
+  # Traces → Tempo (OTLP gRPC).
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  # Métriques → exposées en /metrics, SCRAPÉES par Prometheus (modèle pull).
+  # add_metric_suffixes: false → noms Prometheus = noms OTel (points → underscores),
+  # sans double suffixe `_total` (nos compteurs portent déjà .total/.count).
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    add_metric_suffixes: false
+    resource_to_telemetry_conversion:
+      enabled: true
+  # Logs → Loki via son endpoint OTLP natif (corrélation par trace_id/span_id).
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+
+service:
+  telemetry:
+    logs:
+      level: info
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki]

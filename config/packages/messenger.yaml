@@ -18,6 +18,11 @@ framework:
         routing:
             # Les étapes de cycle planifiées sont traitées en asynchrone.
             App\Infrastructure\Messaging\RunCycleStep: async
+            # Relais de l'outbox (§20.6) : publication Mercure asynchrone ; un échec
+            # est rejoué puis basculé en file d'échec (§25.4, invariant E).
+            App\Infrastructure\Messaging\RelayOutbox: async
+            # Tick de diagnostic (§26.7) : émet les jauges d'alerte.
+            App\Infrastructure\Messaging\EmitDiagnostics: async
 
 when@test:
     framework:

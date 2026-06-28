@@ -33,6 +33,10 @@ jobs:
 
     env:
       DATABASE_URL: "postgresql://app:app@127.0.0.1:5432/app?serverVersion=17&charset=utf8"
+      # Le runner CI n'installe pas l'ext PECL `opentelemetry` (cf. setup-php) :
+      # neutralise le E_USER_WARNING des paquets d'auto-instrumentation, émis à
+      # l'autoload Composer. Les images Docker, elles, embarquent l'ext (I2).
+      OTEL_PHP_DISABLED_INSTRUMENTATIONS: all
 
     steps:
       - name: Checkout
@@ -75,22 +79,16 @@ jobs:
       - name: Tests unitaires
         run: vendor/bin/phpunit --testsuite=Unit
 
-      # La base `app_test` sert les tests d'intégration.
+      # La base `app_test` sert les tests d'intégration ET le test de
+      # neutralisation prod (§7.4) : ce dernier démarre un noyau PROD mais est
+      # redirigé vers `app_test` (base dédiée et jetable), pour ne plus dépendre
+      # de la base `app` partagée — déterminisme local comme en CI (I1).
       - name: Migrations de test (base app_test)
         env:
           APP_ENV: test
         run: |
           php bin/console doctrine:database:create --if-not-exists --no-interaction
           php bin/console doctrine:migrations:sync-metadata-storage --no-interaction
-          php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing --allow-no-migration
-
-      # La base `app` (sans suffixe) sert le test de neutralisation prod, qui
-      # démarre un noyau PROD et frappe l'endpoint (lequel résout le visiteur).
-      - name: Migrations prod (base app)
-        env:
-          APP_ENV: prod
-        run: |
-          php bin/console doctrine:database:create --if-not-exists --no-interaction
           php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing --allow-no-migration
 
       - name: Tests d'intégration et fonctionnels

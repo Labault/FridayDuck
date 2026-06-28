@@ -6,10 +6,13 @@ tests/
 var/
 vendor/
 node_modules/
-assets/
+# assets/ N'EST PAS exclu : le stage Node (asset_builder) en a besoin pour
+# `npm run build`. node_modules reste exclu (reconstruit par `npm ci`).
 .env
 .env.local
 .env.*.local
+# Modèle de secrets pour le VPS (env-file Compose) — pas nécessaire dans l'image.
+.env.prod.dist
 .php-cs-fixer.cache
 .phpunit.cache/
 compose*.yaml

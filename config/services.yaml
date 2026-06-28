@@ -14,6 +14,8 @@ parameters:
     # La mécanique d'énergie arrive en Phase 2a-ii ; ici, valeur par défaut posée
     # à la création de l'édition.
     app.coffee_target: 100
+    # Nom de service OTLP par défaut (§26.1) si OTEL_SERVICE_NAME n'est pas défini.
+    app.otel_default_service: 'friday-duck'
 
 services:
     # default configuration for services in *this* file
@@ -39,9 +41,41 @@ services:
     # Par défaut (prod + repli) : horloge SYSTÈME → APP_FAKE_NOW SANS effet (§7.4).
     App\Domain\Shared\Clock\ClockInterface: '@App\Infrastructure\Clock\SystemClock'
 
-    # Port temps réel (§20, §24.5) → implémentation Mercure. Phase 6 : bascule
-    # outbox en changeant CETTE seule ligne (invariant E).
-    App\Application\RealTime\DomainEventPublisher: '@App\Infrastructure\RealTime\MercureDomainEventPublisher'
+    # Port temps réel (§20, §24.5) → OUTBOX transactionnel (Phase 6b). publish()
+    # écrit une ligne d'outbox dans la transaction métier (atomicité) ; un relais
+    # publie ensuite sur Mercure via RealTimeTransport (invariants A/D). La bascule
+    # est CETTE seule ligne ; MercureDomainEventPublisher reste dans l'arbre (non
+    # câblé) le temps de la transition. Les transports/relais/métriques à impl
+    # unique (RealTimeTransport→Mercure, RelayMetrics→Null, OutboxEntryRepository)
+    # sont auto-aliasés par autowiring.
+    App\Application\RealTime\DomainEventPublisher: '@App\Infrastructure\RealTime\OutboxDomainEventPublisher'
+
+    # ── Télémétrie OpenTelemetry (Phase 7a, §26) ─────────────────────────────
+    # Socle SDK : export OTLP vers un Collector configurable. Endpoint VIDE ⇒
+    # désactivé (providers no-op) → zéro surcoût en local/test. Non bloquant +
+    # discipline worker gérés dans le service (risques A/B).
+    App\Infrastructure\Telemetry\TelemetrySdk:
+        arguments:
+            $endpoint: '%env(string:default::OTEL_EXPORTER_OTLP_ENDPOINT)%'
+            $serviceName: '%env(string:default:app.otel_default_service::OTEL_SERVICE_NAME)%'
+            $serviceVersion: '%env(string:default::APP_VERSION)%'
+            $environment: '%kernel.environment%'
+            $logger: '@logger'
+
+    # Ports de télémétrie → implémentations OTLP (plusieurs impls → alias explicite).
+    App\Application\Telemetry\Tracer: '@App\Infrastructure\Telemetry\OtelTracer'
+    App\Application\Telemetry\Metrics: '@App\Infrastructure\Telemetry\OtelMetrics'
+
+    # Phase 7a : le hook RelayMetrics posé en 6b passe de Null à OTLP (backlog +
+    # mercure.publish.*). Le port ne bouge pas — simple bascule d'alias.
+    App\Application\RealTime\RelayMetrics: '@App\Infrastructure\Telemetry\OtelRelayMetrics'
+
+    # Phase 7c : émetteur de jauges de diagnostic (alertes §26.7). Reçoit le fuseau
+    # métier, la valeur APP_FAKE_NOW (surveillée, §7.4) et l'environnement.
+    App\Infrastructure\Telemetry\DiagnosticsMetricsEmitter:
+        arguments:
+            $appFakeNow: '%env(string:default::APP_FAKE_NOW)%'
+            $environment: '%kernel.environment%'
 
 # Hors production uniquement, l'horloge devient configurable : la liaison prod
 # reste SystemClock par construction (garde-fou structurel, §7.4).

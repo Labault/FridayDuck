@@ -1,0 +1,171 @@
+# Stack e2e OBSERVABILITÉ (Phase 8b, §21/§26) — prouve que les signaux ATTERRISSENT.
+#
+# Complète la 8a : la 8a teste le PRODUIT contre la stack applicative ; la 8b teste
+# la CHAÎNE D'OBSERVABILITÉ de bout en bout (trace/métrique/log/alerte) avec l'image
+# embarquant l'ext PECL `opentelemetry` (auto-instrumentation Doctrine/Messenger
+# ACTIVE) et un VRAI worker Messenger (diagnostics, relais, routage failed).
+#
+# Réseau : se JOINT au réseau externe `friday-duck-observability` (le Collector y
+# vit) pour émettre l'OTLP vers `http://otel-collector:4318`. Base et hub Mercure
+# ISOLÉS (app_obs), sans collision avec la 8a ni la base partagée.
+#
+# Lancer :
+#   docker compose -f compose.observability.yaml up -d            # backends d'abord
+#   docker compose -f compose.observability-e2e.yaml up -d --build --wait
+#   APP_OBS_URL=http://localhost:8090 npx playwright test --project=observability
+#
+# APP_ENV=preprod : l'horloge configurable HONORE APP_FAKE_NOW (un vendredi), pour
+# que le café fonctionne et trace le chemin métier complet. L'alerte
+# AppFakeNowInProduction (environment="prod") est couverte par le service dédié
+# `fakenow-prod` ci-dessous, qui démarre un noyau PROD avec APP_FAKE_NOW présent.
+name: friday-duck-obs-e2e
+
+x-app-base: &app-base
+  build:
+    context: .
+    target: frankenphp_prod
+  image: friday-duck-obs:8b
+  environment: &app-env
+    APP_ENV: preprod
+    APP_DEBUG: "0"
+    APP_SECRET: obs-e2e-secret-not-for-prod
+    APP_FAKE_NOW: "2026-07-03T10:00:00+02:00"
+    DATABASE_URL: "postgresql://app:obs@database-obs:5432/app_obs?serverVersion=17&charset=utf8"
+    # auto_setup=1 : crée `messenger_messages` à la volée (aucune migration ne la
+    # porte ; la 8a n'exerce pas de worker Messenger, la 8b si).
+    MESSENGER_TRANSPORT_DSN: "doctrine://default?auto_setup=1"
+    # OTLP vers le Collector du stack d'observabilité (réseau partagé).
+    OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+    OTEL_SERVICE_NAME: friday-duck
+    MERCURE_JWT_SECRET: "!ChangeThisMercureHubJWTSecretKey!"
+    MERCURE_PUBLISHER_JWT_KEY: "!ChangeThisMercureHubJWTSecretKey!"
+    MERCURE_SUBSCRIBER_JWT_KEY: "!ChangeThisMercureHubJWTSecretKey!"
+    # Hub Mercure CO-LOCALISÉ dans app-obs : le relais et le worker doivent y
+    # publier (sans cette URL, les lignes outbox restent non publiées → pas de span
+    # mercure.update.publish). app-obs la redéfinit (identique) pour son propre hub.
+    MERCURE_URL: "http://app-obs/.well-known/mercure"
+    DEFAULT_URI: http://localhost
+
+services:
+  database-obs:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: app_obs
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: obs
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "app_obs", "-U", "app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [obs-e2e]
+
+  # App : sert le café (HTTP) et émet traces/métriques/logs métier. Hub Mercure
+  # co-localisé ; migrations jouées par l'entrypoint au boot.
+  app-obs:
+    <<: *app-base
+    depends_on:
+      database-obs:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+      SERVER_NAME: ":80"
+      MERCURE_URL: "http://app-obs/.well-known/mercure"
+      MERCURE_PUBLIC_URL: "http://localhost:8090/.well-known/mercure"
+      MERCURE_EXTRA_DIRECTIVES: "anonymous\ncors_origins http://localhost:8090"
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://localhost/health') === false ? 1 : 0);"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    ports: ["8090:80"]
+    networks: [obs-e2e, observability]
+
+  # VRAI worker Messenger : consomme le Scheduler (EmitDiagnostics + RelayOutbox
+  # toutes les minutes, crons du cycle) ET le transport async (routage retries →
+  # failed, §25.4). Émet les jauges de diagnostic qui rendent les alertes réelles.
+  worker-obs:
+    <<: *app-base
+    depends_on:
+      app-obs:
+        condition: service_healthy
+    # Pas de serveur web ici : la sonde HTTP /health de l'image ne s'applique pas.
+    healthcheck:
+      disable: true
+    # Bypass de l'entrypoint (migrations) : l'app les a déjà jouées ; on attend
+    # juste qu'elle soit saine (depends_on) puis on prépare les transports et on
+    # consomme. `--time-limit` borne la vie du worker (redémarré par compose).
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        php bin/console messenger:setup-transports --no-interaction;
+        exec php bin/console messenger:consume scheduler_default async
+        -vv --time-limit=3600 --memory-limit=256M
+    networks: [obs-e2e, observability]
+
+  # Relais bas-latence de l'outbox (filet temps réel) : publie les lignes outbox
+  # non publiées vers Mercure EN PORTANT le traceparent → le span du relais est
+  # ENFANT de la trace de la requête café (frontière async franchie, B1).
+  relay-obs:
+    <<: *app-base
+    depends_on:
+      app-obs:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    entrypoint: ["sh", "-c"]
+    command: ["while true; do php bin/console app:outbox:relay >/dev/null 2>&1 || true; sleep 1; done"]
+    networks: [obs-e2e, observability]
+
+  # Service DÉDIÉ à l'alerte AppFakeNowInProduction (§7.4, §26.7) : noyau PROD avec
+  # APP_FAKE_NOW présent → la jauge duck.app_fake_now_active{environment="prod"}=1.
+  # BASE PROPRE (database-fakenow) pour ne PAS entrer en concurrence de consommateurs
+  # avec worker-obs (même transport/scheduler). En prod l'horloge est neutralisée
+  # (le café y serait DORMANT) ; ce service n'émet QUE le diagnostic via son worker.
+  # Profil `fakenow` : démarré à la demande pour le scénario d'alerte B3.
+  database-fakenow:
+    image: postgres:17-alpine
+    profiles: ["fakenow"]
+    environment:
+      POSTGRES_DB: app_fakenow
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: obs
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "app_fakenow", "-U", "app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [obs-e2e]
+
+  fakenow-prod:
+    <<: *app-base
+    profiles: ["fakenow"]
+    depends_on:
+      database-fakenow:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    environment:
+      <<: *app-env
+      APP_ENV: prod
+      DATABASE_URL: "postgresql://app:obs@database-fakenow:5432/app_fakenow?serverVersion=17&charset=utf8"
+    # Entrypoint d'image CONSERVÉ : il joue les migrations sur app_fakenow avant de
+    # consommer (base isolée, aucune concurrence avec app-obs).
+    command:
+      - php
+      - bin/console
+      - messenger:consume
+      - scheduler_default
+      - async
+      - "-vv"
+      - "--time-limit=3600"
+      - "--memory-limit=256M"
+    networks: [obs-e2e, observability]
+
+networks:
+  obs-e2e:
+    name: friday-duck-obs-e2e
+  observability:
+    external: true
+    name: friday-duck-observability

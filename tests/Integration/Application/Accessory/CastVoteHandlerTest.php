@@ -26,6 +26,8 @@ use App\Infrastructure\Persistence\DoctrineAnonymousVisitorRepository;
 use App\Infrastructure\Persistence\DoctrineFridayAccessoryOptionRepository;
 use App\Infrastructure\Persistence\DoctrineFridayEditionRepository;
 use App\Infrastructure\Persistence\DoctrineTransactional;
+use App\Infrastructure\Telemetry\NullMetrics;
+use App\Infrastructure\Telemetry\NullTracer;
 use App\Tests\Double\SpyDomainEventPublisher;
 use App\Tests\Integration\DatabaseTestCase;
 use Doctrine\DBAL\Connection;
@@ -201,7 +203,6 @@ final class CastVoteHandlerTest extends DatabaseTestCase
             $this->resolveOptions(),
             $this->resolveWinner(),
             new DoctrineAccessoryRepository($this->registry),
-            $this->optionsReader(),
             new AccessoryWinnerViewBuilder(new DoctrineAccessoryRepository($this->registry)),
             new CastVote(
                 new DoctrineTransactional($this->registry),
@@ -210,8 +211,11 @@ final class CastVoteHandlerTest extends DatabaseTestCase
                 new DoctrineAccessoryVoteRepository($this->registry),
                 new UlidIdentifierGenerator(),
                 $clock,
+                $publisher,
+                $this->optionsReader(),
+                new NullTracer(),
+                new NullMetrics(),
             ),
-            $publisher,
         );
     }
 

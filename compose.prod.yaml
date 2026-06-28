@@ -1,0 +1,126 @@
+# Le Canard du Vendredi — stack de PRODUCTION (§31).
+#
+# Lancé par `deploy.sh` (push-to-deploy) :
+#   docker compose --env-file .env.prod.local -f compose.prod.yaml up -d
+#
+# Les SECRETS viennent du fichier d'interpolation `.env.prod.local` (gitignoré,
+# créé sur le VPS à partir de `.env.prod.dist`). C'est l'INJECTION RUNTIME : rien
+# n'est gravé dans l'image (§27.6). Ce fichier n'est PAS le `.env` de Symfony —
+# c'est l'env-file d'interpolation de Compose, donc aucune collision.
+#
+# Trois services :
+#   app      — FrankenPHP (web + hub Mercure co-localisé), TLS Let's Encrypt auto.
+#   database — PostgreSQL persistant.
+#   worker   — `messenger:consume` : relais outbox + étapes de cycle + diagnostics.
+#              SANS lui, un café est committé mais jamais publié sur Mercure (§20.6).
+name: friday-duck-prod
+
+x-app-image: &app-image friday-duck/app:${APP_IMAGE_TAG:-latest}
+
+# Environnement partagé app + worker (même image, même config métier).
+x-app-env: &app-env
+  # APP_ENV est déjà figé dans l'image (.env.local.php) ; on le réaffirme pour
+  # lever toute ambiguïté. APP_FAKE_NOW est VOLONTAIREMENT ABSENT (§7.4).
+  APP_ENV: prod
+  APP_SECRET: ${APP_SECRET:?APP_SECRET manquant (voir .env.prod.dist)}
+  # APP_VERSION n'est PAS injecté au runtime : c'est une propriété de l'IMAGE,
+  # gravée au build (ARG APP_VERSION) et lue au runtime depuis l'ENV de l'image.
+  # Ainsi /health reflète la version réellement déployée, y compris après rollback.
+  DEFAULT_URI: ${DEFAULT_URI:?DEFAULT_URI manquant}
+  DATABASE_URL: ${DATABASE_URL:?DATABASE_URL manquant}
+  # URL INTERNE de publication (vhost app:80, HTTP) — l'app et le worker publient ici.
+  MERCURE_URL: ${MERCURE_URL:-http://app/.well-known/mercure}
+  # URL PUBLIQUE HTTPS RÉELLE jointe par l'EventSource du navigateur.
+  MERCURE_PUBLIC_URL: ${MERCURE_PUBLIC_URL:?MERCURE_PUBLIC_URL manquant}
+  MERCURE_JWT_SECRET: ${MERCURE_JWT_SECRET:?MERCURE_JWT_SECRET manquant}
+  MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_PUBLISHER_JWT_KEY:?MERCURE_PUBLISHER_JWT_KEY manquant}
+  MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_KEY:?MERCURE_SUBSCRIBER_JWT_KEY manquant}
+  MESSENGER_TRANSPORT_DSN: ${MESSENGER_TRANSPORT_DSN:-doctrine://default?auto_setup=0}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+  OTEL_SERVICE_NAME: ${OTEL_SERVICE_NAME:-friday-duck}
+
+services:
+  app:
+    image: *app-image
+    build:
+      context: .
+      target: frankenphp_prod
+      args:
+        APP_VERSION: ${APP_VERSION:-0.0.0-dev}
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+      # Domaine public (TLS auto Let's Encrypt) + vhost interne app:80 (HTTP) pour
+      # la publication Mercure co-localisée. Caddy persiste les certifs dans /data.
+      SERVER_NAME: "${SERVER_NAME:-canard.labault.dev}, app:80"
+      # Options globales Caddy (ex. `email …` pour les avis d'expiration ACME).
+      CADDY_GLOBAL_OPTIONS: ${CADDY_GLOBAL_OPTIONS:-}
+    healthcheck:
+      # Sonde métier 3 couches (/health → 503 si la base ne répond pas).
+      # Vise le vhost interne `app:80` (le domaine public n'écoute qu'en HTTPS et
+      # `localhost` n'est pas un vhost en prod). file_get_contents renvoie false
+      # sur 503/redirection → le conteneur passe unhealthy.
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://app/health') === false ? 1 : 0);"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    ports:
+      # Défauts prod 80/443 (ACME HTTP-01 exige le 80 joignable). Surchargeables
+      # pour une répétition locale qui ne peut pas prendre les ports privilégiés.
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      # Certificats TLS + état Caddy : DOIT persister (sinon re-émission à chaque
+      # déploiement → risque de rate-limit Let's Encrypt).
+      - caddy_data:/data
+      - caddy_config:/config
+
+  worker:
+    image: *app-image
+    restart: unless-stopped
+    depends_on:
+      database:
+        condition: service_healthy
+      # Garantit que l'image est construite (le worker ne la build pas lui-même).
+      app:
+        condition: service_started
+    environment:
+      <<: *app-env
+    # Worker temps réel + cycle : génère les messages planifiés (scheduler_default)
+    # ET consomme la file async (RelayOutbox, RunCycleStep, EmitDiagnostics).
+    # Recyclage périodique (mémoire/temps) — services stateless obligent (§22.2).
+    command:
+      - php
+      - bin/console
+      - messenger:consume
+      - scheduler_default
+      - async
+      - "--time-limit=3600"
+      - "--memory-limit=128M"
+      - "-v"
+
+  database:
+    image: postgres:${POSTGRES_VERSION:-17}-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD manquant (voir .env.prod.dist)}
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - database_data:/var/lib/postgresql/data:rw
+
+volumes:
+  caddy_data:
+  caddy_config:
+  database_data:

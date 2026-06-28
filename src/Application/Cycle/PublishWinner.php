@@ -8,6 +8,7 @@ use App\Application\Accessory\AccessoryWinnerViewBuilder;
 use App\Application\Accessory\ResolveAccessoryWinner;
 use App\Application\RealTime\AccessoryWinnerSelected;
 use App\Application\RealTime\DomainEventPublisher;
+use App\Domain\Shared\Persistence\Transactional;
 
 /**
  * Annonce le gagnant (§25.1, vendredi 14:01) : s'assure qu'il est résolu (4a,
@@ -23,6 +24,7 @@ final readonly class PublishWinner
         private AccessoryWinnerViewBuilder $accessoryWinnerViewBuilder,
         private ProcessedMessageGuard $processedMessageGuard,
         private DomainEventPublisher $domainEventPublisher,
+        private Transactional $transactional,
     ) {
     }
 
@@ -31,12 +33,16 @@ final readonly class PublishWinner
         $this->prepareFridayEdition->prepare($fridayDate, $timezone);
         $accessoryWinnerResolution = $this->resolveAccessoryWinner->resolve($fridayDate, $timezone);
 
-        if ($this->processedMessageGuard->markIfFirst(CycleKey::accessoryWinner($fridayDate))) {
-            $winner = $this->accessoryWinnerViewBuilder->fromCode($accessoryWinnerResolution->winnerCode);
-            $this->domainEventPublisher->publish(
-                $fridayDate,
-                new AccessoryWinnerSelected($winner->code, $winner->label, $winner->slot, $winner->svgGroupId),
-            );
-        }
+        // §25.4 — Dédup + annonce atomiques (cf. OpenFriday) : sous async+retry, un
+        // échec de publication rejoue proprement, exactement-une-fois préservé.
+        $this->transactional->transactional(function () use ($fridayDate, $accessoryWinnerResolution): void {
+            if ($this->processedMessageGuard->markIfFirst(CycleKey::accessoryWinner($fridayDate))) {
+                $winner = $this->accessoryWinnerViewBuilder->fromCode($accessoryWinnerResolution->winnerCode);
+                $this->domainEventPublisher->publish(
+                    $fridayDate,
+                    new AccessoryWinnerSelected($winner->code, $winner->label, $winner->slot, $winner->svgGroupId),
+                );
+            }
+        });
     }
 }

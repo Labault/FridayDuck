@@ -257,9 +257,9 @@ final class FridayCycleTest extends DatabaseTestCase
 
         return new FridayCycle(
             $prepare,
-            new OpenFriday($prepare, $guard, $publisher),
+            new OpenFriday($prepare, $guard, $publisher, $transactional),
             new CloseVote($prepare, $resolveWinner, $guard),
-            new PublishWinner($prepare, $resolveWinner, $winnerViewBuilder, $guard, $publisher),
+            new PublishWinner($prepare, $resolveWinner, $winnerViewBuilder, $guard, $publisher, $transactional),
             new PrepareReport($prepare, $resolveWinner),
             new CloseFriday($prepare, $transactional, $editionRepo, $guard, $publisher, $clock),
             new GenerateWeeklyReport($editionRepo, new DoctrineFridayVisitRepository($this->registry), $adviceRepo, new DoctrineWeeklyReportRepository($this->registry), $idGen, $clock),

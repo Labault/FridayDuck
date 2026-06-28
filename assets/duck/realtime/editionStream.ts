@@ -1,4 +1,6 @@
 import { EnergySubscription, type EventSourceFactory } from './energySubscription.ts';
+import { attachConnectionTelemetry } from '../telemetry/frontInstrumentation.ts';
+import { HealthTelemetry } from '../telemetry/healthTelemetry.ts';
 
 export type StreamMessageHandler = (raw: string) => void;
 
@@ -104,4 +106,10 @@ function readType(raw: string): string | null {
 }
 
 /** Singleton de page : la connexion partagée par tous les contrôleurs. */
-export const editionStream = new EditionStream((url) => new EventSource(url, { withCredentials: true }));
+const healthTelemetry = new HealthTelemetry();
+export const editionStream = new EditionStream((url) => {
+  const source = new EventSource(url, { withCredentials: true });
+  // Santé du canal temps réel (§26.5) : état de connexion + reconnexions.
+  attachConnectionTelemetry(source, healthTelemetry);
+  return source;
+});

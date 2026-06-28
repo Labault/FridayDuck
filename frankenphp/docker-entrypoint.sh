@@ -27,13 +27,17 @@ if [ "$1" = 'frankenphp' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
     done
     echo 'The database is now ready and reachable.'
 
-    # Le Scheduler déclenche le métier ; la MÉCANIQUE de migration, elle,
-    # tourne ici au démarrage. La synchro du stockage de métadonnées est
-    # toujours sûre sur une base vide ; le migrate ne s'applique que s'il
-    # existe des migrations (aucune à ce stade — Phase 1+).
-    php bin/console doctrine:migrations:sync-metadata-storage --no-interaction
-    if [ -n "$(find ./migrations -iname '*.php' -print -quit 2>/dev/null)" ]; then
-      php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing --allow-no-migration
+    # Migrations AU DÉMARRAGE : confort de dev / préprod UNIQUEMENT.
+    # En PROD, `deploy.sh` possède les migrations (gate explicite, exécuté UNE
+    # fois AVANT la bascule de trafic) : les laisser ici ferait courir l'app ET
+    # le worker en concurrence à chaque redéploiement. La synchro du stockage de
+    # métadonnées est sûre sur base vide ; le migrate ne s'applique que s'il
+    # existe des migrations.
+    if [ "${APP_ENV:-}" != 'prod' ]; then
+      php bin/console doctrine:migrations:sync-metadata-storage --no-interaction
+      if [ -n "$(find ./migrations -iname '*.php' -print -quit 2>/dev/null)" ]; then
+        php bin/console doctrine:migrations:migrate --no-interaction --all-or-nothing --allow-no-migration
+      fi
     fi
   fi
 

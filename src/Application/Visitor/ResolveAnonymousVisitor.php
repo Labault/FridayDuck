@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Visitor;
 
+use App\Application\Telemetry\Tracer;
 use App\Domain\Shared\Clock\ClockInterface;
 use App\Domain\Shared\Identity\IdentifierGenerator;
 use App\Domain\Shared\Persistence\ConcurrentCreationException;
@@ -21,36 +22,47 @@ final readonly class ResolveAnonymousVisitor
         private AnonymousVisitorRepository $anonymousVisitorRepository,
         private IdentifierGenerator $identifierGenerator,
         private ClockInterface $clock,
+        // Optionnel : autowiré en prod (span visitor.resolve), null en test.
+        private ?Tracer $tracer = null,
     ) {
     }
 
     public function resolve(string $anonymousIdentifierHash): VisitorResolution
     {
-        $existing = $this->anonymousVisitorRepository->findByHash($anonymousIdentifierHash);
-        if ($existing instanceof AnonymousVisitor) {
-            $this->anonymousVisitorRepository->touch($existing, $this->clock->now());
+        $work = function () use ($anonymousIdentifierHash): VisitorResolution {
+            $existing = $this->anonymousVisitorRepository->findByHash($anonymousIdentifierHash);
+            if ($existing instanceof AnonymousVisitor) {
+                $this->anonymousVisitorRepository->touch($existing, $this->clock->now());
 
-            return new VisitorResolution($existing, false);
-        }
-
-        $anonymousVisitor = AnonymousVisitor::register(
-            $this->identifierGenerator->nextIdentifier(),
-            $anonymousIdentifierHash,
-            $this->clock->now(),
-        );
-
-        try {
-            $this->anonymousVisitorRepository->add($anonymousVisitor);
-
-            return new VisitorResolution($anonymousVisitor, true);
-        } catch (ConcurrentCreationException $exception) {
-            $winner = $this->anonymousVisitorRepository->findByHash($anonymousIdentifierHash);
-            if (!$winner instanceof AnonymousVisitor) {
-                throw new \RuntimeException('Visiteur introuvable après une création concurrente.', $exception->getCode(), previous: $exception);
+                return new VisitorResolution($existing, false);
             }
-            $this->anonymousVisitorRepository->touch($winner, $this->clock->now());
 
-            return new VisitorResolution($winner, false);
+            $anonymousVisitor = AnonymousVisitor::register(
+                $this->identifierGenerator->nextIdentifier(),
+                $anonymousIdentifierHash,
+                $this->clock->now(),
+            );
+
+            try {
+                $this->anonymousVisitorRepository->add($anonymousVisitor);
+
+                return new VisitorResolution($anonymousVisitor, true);
+            } catch (ConcurrentCreationException $exception) {
+                $winner = $this->anonymousVisitorRepository->findByHash($anonymousIdentifierHash);
+                if (!$winner instanceof AnonymousVisitor) {
+                    throw new \RuntimeException('Visiteur introuvable après une création concurrente.', $exception->getCode(), previous: $exception);
+                }
+                $this->anonymousVisitorRepository->touch($winner, $this->clock->now());
+
+                return new VisitorResolution($winner, false);
+            }
+        };
+
+        // Attributs vides : JAMAIS le hash ni l'identité dans un span (§27, risque C).
+        if (!$this->tracer instanceof Tracer) {
+            return $work();
         }
+
+        return $this->tracer->trace('visitor.resolve', [], static fn (): VisitorResolution => $work());
     }
 }

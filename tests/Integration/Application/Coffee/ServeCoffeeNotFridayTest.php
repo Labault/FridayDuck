@@ -16,6 +16,8 @@ use App\Infrastructure\Persistence\DoctrineAnonymousVisitorRepository;
 use App\Infrastructure\Persistence\DoctrineCoffeeContributionRepository;
 use App\Infrastructure\Persistence\DoctrineFridayEditionRepository;
 use App\Infrastructure\Persistence\DoctrineTransactional;
+use App\Infrastructure\Telemetry\NullMetrics;
+use App\Infrastructure\Telemetry\NullTracer;
 use App\Tests\Double\SpyDomainEventPublisher;
 use App\Tests\Integration\DatabaseTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -43,8 +45,10 @@ final class ServeCoffeeNotFridayTest extends DatabaseTestCase
                 new DoctrineCoffeeContributionRepository($this->registry),
                 new UlidIdentifierGenerator(),
                 $tuesday,
+                $publisher,
+                new NullTracer(),
+                new NullMetrics(),
             ),
-            $publisher,
         );
 
         $outcome = $handler->handle(hash('sha256', 'A'), 'action-1');

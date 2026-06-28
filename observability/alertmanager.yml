@@ -1,0 +1,12 @@
+# Alertmanager (§26.7) — routage local minimal. En 9/prod : brancher un récepteur
+# réel (Slack/e-mail/webhook). Ici les alertes sont surtout visibles dans
+# Prometheus (/alerts) et Alertmanager (/#/alerts).
+route:
+  receiver: default
+  group_by: ["alertname", "severity"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+
+receivers:
+  - name: default

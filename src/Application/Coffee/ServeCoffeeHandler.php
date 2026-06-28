@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Application\Coffee;
 
 use App\Application\Friday\ResolveCurrentFridayEdition;
-use App\Application\RealTime\DomainEventPublisher;
-use App\Application\RealTime\EnergyChanged;
 use App\Application\Visitor\ResolveAnonymousVisitor;
 use App\Domain\Coffee\CoffeeLimitReached;
 use App\Domain\Friday\FridayCalendar;
@@ -17,7 +15,8 @@ use App\Domain\Friday\FridayCalendar;
  * GARDE TEMPORELLE EN PREMIER (invariant A) : NOT_FRIDAY est décidé par le
  * Domaine temporel (horloge), jamais par la colonne status de l'édition. Hors
  * vendredi, aucune mutation. Le vendredi : résout l'identité, garantit l'édition
- * (résoudre-ou-créer), puis sert le café dans la transaction verrouillée.
+ * (résoudre-ou-créer), puis sert le café dans la transaction verrouillée — qui
+ * écrit aussi l'événement temps réel dans l'outbox (§20.6, atomicité).
  */
 final readonly class ServeCoffeeHandler
 {
@@ -26,7 +25,6 @@ final readonly class ServeCoffeeHandler
         private ResolveAnonymousVisitor $resolveAnonymousVisitor,
         private ResolveCurrentFridayEdition $resolveCurrentFridayEdition,
         private ServeCoffee $serveCoffee,
-        private DomainEventPublisher $domainEventPublisher,
     ) {
     }
 
@@ -52,17 +50,9 @@ final readonly class ServeCoffeeHandler
             return CoffeeOutcome::limitReached();
         }
 
-        // Publication POST-COMMIT (invariant A) : `serve()` a déjà committé en
-        // revenant. On ne diffuse que sur une acceptation RÉELLE — jamais sur un
-        // rejeu idempotent (sinon double-comptage), jamais sur NOT_FRIDAY/quota.
-        // Le port est best-effort : un échec n'annule pas le café (§20.6).
-        if (!$result->replayed) {
-            $this->domainEventPublisher->publish(
-                $fridayState->fridayDate,
-                new EnergyChanged($result->currentEnergy, $result->energyVersion, $clientActionId),
-            );
-        }
-
+        // L'événement ENERGY_CHANGED est désormais écrit dans l'outbox PAR `serve()`,
+        // dans la transaction du café et seulement sur acceptation réelle (§20.6,
+        // invariant A) ; un relais le publiera. Le handler n'a plus à diffuser.
         return CoffeeOutcome::served($result);
     }
 }

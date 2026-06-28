@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Domain\Outbox\OutboxEntry" table="outbox">
+        <!-- Identité monotone (IDENTITY) = ordre d'écriture/relais (invariant C). -->
+        <id name="id" column="id" type="integer">
+            <generator strategy="IDENTITY"/>
+        </id>
+        <field name="fridayDate" column="friday_date" type="string" length="10"/>
+        <field name="type" column="type" type="string" length="64"/>
+        <field name="payload" column="payload" type="text"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <field name="publishedAt" column="published_at" type="datetime_immutable" nullable="true"/>
+        <field name="attempts" column="attempts" type="integer"/>
+        <!-- Phase 7a : contexte de trace W3C capturé à l'écriture (propagation). -->
+        <field name="traceparent" column="traceparent" type="string" length="64" nullable="true"/>
+        <indexes>
+            <!-- Balayage du relais : lignes non publiées. -->
+            <index name="idx_outbox_pending" columns="published_at"/>
+            <!-- Relais EN ORDRE par édition (friday_date puis id croissant). -->
+            <index name="idx_outbox_edition_order" columns="friday_date,id"/>
+        </indexes>
+    </entity>
+</doctrine-mapping>

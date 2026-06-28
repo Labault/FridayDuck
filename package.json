@@ -6,13 +6,17 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "e2e:up": "npm run build && docker compose -f compose.e2e.yaml up -d --build --wait",
+    "e2e:down": "docker compose -f compose.e2e.yaml down -v"
   },
   "dependencies": {
     "@hotwired/stimulus": "^3.2.2",
     "@theatre/core": "^0.7.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
     "@symfony/stimulus-bridge": "^3.2.0 || ^4.0.0",
     "@theatre/studio": "^0.7.2",
     "happy-dom": "^20.0.0",

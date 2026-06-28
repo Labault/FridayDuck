@@ -30,6 +30,9 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Dumps PostgreSQL pré-migration produits par deploy.sh (filet de rollback).
+/backups/
+
 # Logs
 *.log
 
@@ -37,6 +40,10 @@ Thumbs.db
 /vendor/
 /node_modules/
 # <<< bootstrap
+
+# Artefacts Playwright (rapports / traces e2e)
+/test-results/
+/playwright-report/
 
 ###> friendsofphp/php-cs-fixer ###
 /.php-cs-fixer.php

@@ -9,6 +9,7 @@ import {
 import { SequenceBarrier } from '../duck/state/sequenceBarrier.ts';
 import { postVote, type VoteOutcome } from '../duck/vote/voteClient.ts';
 import { canVote, leaderCode, percentage, totalVotes, voteMode, type OptionTally, type VoteMode } from '../duck/vote/voteUiState.ts';
+import { shouldProclaim } from '../duck/vote/winnerProclamation.ts';
 
 type OptionValue = { code: string; label: string; displayOrder: number; voteCount: number };
 
@@ -73,9 +74,13 @@ export default class extends Controller<HTMLElement> {
     this.renderResults();
     this.renderMode();
 
-    // Gagnant déjà connu (arrivant tardif) → proclamation STATIQUE (sans fanfare).
+    // Late-join : un gagnant peut déjà être présent dans l'état initial Twig. Son
+    // MONTAGE (état persistant) est assuré par duck_controller depuis sa propre
+    // winnerValue ; la PROCLAMATION transitoire, elle, ne se joue JAMAIS sur
+    // l'état-au-chargement (§10.5) — shouldProclaim('initial') est false, donc on
+    // ne proclame pas ici. La fanfare est réservée au seul chemin live ci-dessous.
     const initialWinner = readWinner(this.winnerValue);
-    if (initialWinner !== null) {
+    if (initialWinner !== null && shouldProclaim('initial')) {
       this.proclaim(initialWinner, false);
     }
 
@@ -156,7 +161,11 @@ export default class extends Controller<HTMLElement> {
       return;
     }
     this.close('');
-    this.proclaim(winner, true); // live → proclamation (le duck_controller monte + flourish)
+    // Transition pas-de-gagnant → gagnant observée EN DIRECT → proclamation
+    // transitoire (§10.5) ; le duck_controller monte l'accessoire + joue le flourish.
+    if (shouldProclaim('live')) {
+      this.proclaim(winner, true);
+    }
   }
 
   private lockOnChoice(choice: string, message: string): void {

@@ -1,0 +1,143 @@
+# Règles d'alerte (§26.7) — chaque `expr` référence une métrique RÉELLEMENT émise
+# (manuelles 7a + jauges de diagnostic 7c). Seuil + `for:` calibrés contre la
+# FATIGUE D'ALERTE (danger X) ; le groupe `pipeline` est le DEAD-MAN (danger Y).
+# Runbook : docs/runbook.md (ancre par alerte).
+groups:
+  - name: friday-duck-metier
+    rules:
+      - alert: FridayButDuckDormant
+        expr: duck_clock_friday_active == 1 and duck_edition_open == 0
+        for: 10m
+        labels: { severity: critical }
+        annotations:
+          summary: "Vendredi, mais le canard est DORMANT"
+          description: "L'horloge dit AWAKE mais l'édition du jour n'est pas ouverte (§26.7)."
+          runbook: "docs/runbook.md#vendredi-mais-canard-dormant"
+
+      - alert: EnergyOutOfRange
+        expr: duck_energy < 0 or duck_energy > 100
+        for: 5m
+        labels: { severity: high }
+        annotations:
+          summary: "Énergie hors de l'intervalle 0–100"
+          description: "duck_energy = {{ $value }} — incohérence de la mécanique d'énergie."
+          runbook: "docs/runbook.md#energie-hors-intervalle"
+
+      - alert: VoteStillOpenAfterClose
+        expr: duck_vote_unresolved_after_close == 1
+        for: 10m
+        labels: { severity: high }
+        annotations:
+          summary: "Vote toujours ouvert après 14:00"
+          description: "Vendredi, après l'heure de clôture, aucun gagnant figé."
+          runbook: "docs/runbook.md#vote-ouvert-apres-cloture"
+
+      - alert: ClockStatusDivergence
+        expr: duck_clock_status_divergence == 1
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "Divergence horloge / EditionStatus (SIGNAL, pas correction)"
+          description: "Le statut persisté contredit l'horloge (inv. B 6a). NE PAS corriger le statut automatiquement ; investiguer le Scheduler/rattrapage."
+          runbook: "docs/runbook.md#divergence-horloge-editionstatus"
+
+  - name: friday-duck-technique
+    rules:
+      - alert: OutboxBacklogStuck
+        expr: min_over_time(mercure_outbox_backlog[15m]) > 20
+        for: 0m
+        labels: { severity: high }
+        annotations:
+          summary: "Backlog outbox élevé et persistant (relais en panne ?)"
+          description: "Au moins 20 événements non publiés depuis 15 min — le relais Mercure n'écoule plus la file."
+          runbook: "docs/runbook.md#backlog-outbox"
+
+      - alert: MessengerFailedQueueNonEmpty
+        expr: messenger_failed_messages > 0
+        for: 5m
+        labels: { severity: high }
+        annotations:
+          summary: "File d'échec Messenger non vide (§25.4)"
+          description: "{{ $value }} message(s) dans le transport failed."
+          runbook: "docs/runbook.md#file-dechec-messenger"
+
+      - alert: MercurePublishFailures
+        expr: increase(mercure_publish_failure[10m]) > 0
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Échecs de publication Mercure soutenus"
+          description: "Le relais échoue à publier sur le hub depuis 10 min."
+          runbook: "docs/runbook.md#echecs-publication-mercure"
+
+      - alert: AppFakeNowInProduction
+        expr: duck_app_fake_now_active{environment="prod"} == 1
+        for: 0m
+        labels: { severity: critical }
+        annotations:
+          summary: "APP_FAKE_NOW présent en PRODUCTION (§7.4)"
+          description: "L'horloge métier est falsifiable en prod — faille temporelle. Retirer la variable immédiatement."
+          runbook: "docs/runbook.md#app-fake-now-en-prod"
+
+      - alert: HttpServerErrorRateHigh
+        expr: |
+          sum(rate(http_server_request_count{http_response_status_code=~"5.."}[5m]))
+            / clamp_min(sum(rate(http_server_request_count[5m])), 1) > 0.05
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Taux d'erreurs HTTP 5xx > 5%"
+          description: "Plus de 5% des requêtes échouent depuis 10 min."
+          runbook: "docs/runbook.md#erreurs-http"
+
+      - alert: WorkerMemoryGrowth
+        expr: min_over_time(worker_memory_bytes[30m]) > 256 * 1024 * 1024
+        for: 0m
+        labels: { severity: warning }
+        annotations:
+          summary: "Mémoire worker durablement élevée (fuite ?)"
+          description: "La mémoire du worker reste > 256 Mo depuis 30 min (§22.2)."
+          runbook: "docs/runbook.md#memoire-worker"
+
+  - name: friday-duck-front
+    rules:
+      - alert: FrontAnimationFailures
+        expr: increase(duck_animation_init_failure[10m]) + increase(duck_animation_sequence_failure[10m]) > 5
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Échecs d'animation front au-dessus du seuil"
+          description: "Theatre.js échoue (init/séquence) pour plusieurs visiteurs."
+          runbook: "docs/runbook.md#echecs-animation-front"
+
+      - alert: FrontMercureReconnectStorm
+        expr: increase(duck_mercure_reconnect_count[10m]) > 10
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Reconnexions Mercure répétées côté front"
+          description: "Le canal temps réel est instable (hub ou réseau)."
+          runbook: "docs/runbook.md#reconnexions-mercure-front"
+
+  - name: friday-duck-pipeline
+    rules:
+      # DEAD-MAN (danger Y) : le tick de diagnostic publie ces jauges chaque minute.
+      # Leur ABSENCE = Collector mort, worker arrêté, ou pipeline qui jette les
+      # signaux — un faux calme à détecter, pas à confondre avec « tout va bien ».
+      - alert: TelemetryPipelineSilent
+        expr: absent(duck_clock_friday_active)
+        for: 10m
+        labels: { severity: critical }
+        annotations:
+          summary: "Aucun signal de diagnostic reçu (pipeline mort ?)"
+          description: "duck_clock_friday_active absent depuis 10 min : Collector/worker/export en panne. Les autres alertes 'valeur > seuil' sont AVEUGLES tant que ceci dure."
+          runbook: "docs/runbook.md#pipeline-telemetrie-muet"
+
+      - alert: CollectorScrapeDown
+        expr: up{job="otel-collector"} == 0
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "Cible de scrape OTel Collector DOWN"
+          description: "Prometheus ne scrape plus l'exporter du Collector."
+          runbook: "docs/runbook.md#pipeline-telemetrie-muet"

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Cycle;
 
 use App\Application\Accessory\ResolveAccessoryWinner;
+use App\Application\Telemetry\Tracer;
 
 /**
  * Clôt le vote (§25.1, vendredi 14:00) en invoquant le résolveur de gagnant
@@ -18,6 +19,8 @@ final readonly class CloseVote
         private PrepareFridayEdition $prepareFridayEdition,
         private ResolveAccessoryWinner $resolveAccessoryWinner,
         private ProcessedMessageGuard $processedMessageGuard,
+        // Optionnel : autowiré en prod (span accessory.vote.close), null en test.
+        private ?Tracer $tracer = null,
     ) {
     }
 
@@ -25,7 +28,16 @@ final readonly class CloseVote
     {
         // Édition + options doivent exister avant de départager.
         $this->prepareFridayEdition->prepare($fridayDate, $timezone);
-        $this->resolveAccessoryWinner->resolve($fridayDate, $timezone);
+
+        $closeWork = function () use ($fridayDate, $timezone): void {
+            $this->resolveAccessoryWinner->resolve($fridayDate, $timezone);
+        };
+        if (!$this->tracer instanceof Tracer) {
+            $closeWork();
+        } else {
+            $this->tracer->trace('accessory.vote.close', ['friday.date' => $fridayDate->format('Y-m-d')], static fn () => $closeWork());
+        }
+
         $this->processedMessageGuard->markIfFirst(CycleKey::accessoryClose($fridayDate));
     }
 }

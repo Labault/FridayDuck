@@ -14,6 +14,9 @@ use App\Infrastructure\Persistence\DoctrineAnonymousVisitorRepository;
 use App\Infrastructure\Persistence\DoctrineCoffeeContributionRepository;
 use App\Infrastructure\Persistence\DoctrineFridayEditionRepository;
 use App\Infrastructure\Persistence\DoctrineTransactional;
+use App\Infrastructure\Telemetry\NullMetrics;
+use App\Infrastructure\Telemetry\NullTracer;
+use App\Tests\Double\NullDomainEventPublisher;
 use App\Tests\Integration\DatabaseTestCase;
 use Doctrine\DBAL\Connection;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -103,6 +106,9 @@ final class ServeCoffeeTest extends DatabaseTestCase
             new DoctrineCoffeeContributionRepository($this->registry),
             new UlidIdentifierGenerator(),
             new FrozenClock(new \DateTimeImmutable('2026-07-03T10:00:00+02:00')),
+            new NullDomainEventPublisher(),
+            new NullTracer(),
+            new NullMetrics(),
         );
     }
 

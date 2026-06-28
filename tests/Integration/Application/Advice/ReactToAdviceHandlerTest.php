@@ -20,6 +20,8 @@ use App\Infrastructure\Persistence\DoctrineAdviceRepository;
 use App\Infrastructure\Persistence\DoctrineAnonymousVisitorRepository;
 use App\Infrastructure\Persistence\DoctrineFridayEditionRepository;
 use App\Infrastructure\Persistence\DoctrineTransactional;
+use App\Infrastructure\Telemetry\NullMetrics;
+use App\Infrastructure\Telemetry\NullTracer;
 use App\Tests\Double\SpyDomainEventPublisher;
 use App\Tests\Integration\DatabaseTestCase;
 use Doctrine\DBAL\Connection;
@@ -168,8 +170,10 @@ final class ReactToAdviceHandlerTest extends DatabaseTestCase
                 new DoctrineAdviceReactionRepository($this->registry),
                 new UlidIdentifierGenerator(),
                 $clock,
+                $publisher,
+                new NullTracer(),
+                new NullMetrics(),
             ),
-            $publisher,
         );
     }
 

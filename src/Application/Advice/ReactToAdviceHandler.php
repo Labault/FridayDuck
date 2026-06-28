@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Application\Advice;
 
 use App\Application\Friday\ResolveCurrentFridayEdition;
-use App\Application\RealTime\AdviceReactionChanged;
-use App\Application\RealTime\DomainEventPublisher;
 use App\Application\Visitor\ResolveAnonymousVisitor;
 use App\Domain\Advice\AdviceReactionType;
 use App\Domain\Friday\FridayCalendar;
@@ -17,7 +15,7 @@ use App\Domain\Friday\FridayCalendar;
  * GARDE TEMPORELLE EN PREMIER (invariant A) : les réactions sont ouvertes TOUT le
  * vendredi (AWAKE) — pas de clôture à 14:00 (contrairement au vote). Hors vendredi
  * → NOT_FRIDAY. Réaction inconnue → INVALID_REACTION. Puis upsert transactionnel
- * et publication POST-COMMIT sur changement EFFECTIF seulement (invariant E).
+ * qui écrit aussi l'événement dans l'outbox sur changement EFFECTIF (§20.6).
  */
 final readonly class ReactToAdviceHandler
 {
@@ -27,7 +25,6 @@ final readonly class ReactToAdviceHandler
         private ResolveCurrentFridayEdition $resolveCurrentFridayEdition,
         private ResolveAdvice $resolveAdvice,
         private ReactToAdvice $reactToAdvice,
-        private DomainEventPublisher $domainEventPublisher,
     ) {
     }
 
@@ -49,14 +46,9 @@ final readonly class ReactToAdviceHandler
 
         $adviceReactionResult = $this->reactToAdvice->react($fridayState->fridayDate, $fridayState->timezoneName(), $visitor->id(), $reaction);
 
-        // POST-COMMIT (invariant E) : seulement sur changement effectif (pas no-op).
-        if ($adviceReactionResult->changed) {
-            $this->domainEventPublisher->publish(
-                $fridayState->fridayDate,
-                new AdviceReactionChanged($adviceReactionResult->adviceSequence, $adviceReactionResult->concerning, $adviceReactionResult->alreadyDone, $adviceReactionResult->takingNotes),
-            );
-        }
-
+        // L'événement ADVICE_REACTION_CHANGED est désormais écrit dans l'outbox PAR
+        // `react()`, dans sa transaction et seulement sur changement effectif (§20.6,
+        // invariant A) ; un relais le publiera. Le handler n'a plus à diffuser.
         return AdviceReactionOutcome::recorded($adviceReactionResult);
     }
 }

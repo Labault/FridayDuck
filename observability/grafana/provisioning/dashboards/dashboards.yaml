@@ -1,0 +1,14 @@
+# Provisionnement des dashboards (§26.6) — chargés depuis les fichiers JSON
+# versionnés du même dossier (aucun clic manuel à reproduire).
+apiVersion: 1
+
+providers:
+  - name: friday-duck
+    type: file
+    folder: "Le Canard du Vendredi"
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

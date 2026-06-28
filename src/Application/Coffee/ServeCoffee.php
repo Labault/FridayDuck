@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Application\Coffee;
 
+use App\Application\RealTime\DomainEventPublisher;
+use App\Application\RealTime\EnergyChanged;
+use App\Application\Telemetry\Metrics;
+use App\Application\Telemetry\SpanScope;
+use App\Application\Telemetry\Tracer;
 use App\Domain\Coffee\CoffeeContribution;
 use App\Domain\Coffee\CoffeeContributionRepository;
 use App\Domain\Coffee\CoffeeIdempotencyKey;
@@ -34,6 +39,9 @@ final readonly class ServeCoffee
         private CoffeeContributionRepository $coffeeContributionRepository,
         private IdentifierGenerator $identifierGenerator,
         private ClockInterface $clock,
+        private DomainEventPublisher $domainEventPublisher,
+        private Tracer $tracer,
+        private Metrics $metrics,
     ) {
     }
 
@@ -49,7 +57,10 @@ final readonly class ServeCoffee
             $clientActionId,
         );
 
-        return $this->transactional->transactional(function () use ($anonymousVisitor, $fridayDate, $timezone, $clientActionId, $key): CoffeeResult {
+        // Attributs de span = CONTEXTE métier (édition/date), JAMAIS l'identité brute (§27).
+        $spanAttributes = ['friday.date' => $fridayDate->format('Y-m-d')];
+
+        return $this->transactional->transactional(function () use ($anonymousVisitor, $fridayDate, $timezone, $clientActionId, $key, $spanAttributes): CoffeeResult {
             // a. Idempotence (chemin rapide, sans verrou) : rejeu → état courant.
             $existing = $this->coffeeContributionRepository->findByIdempotencyKey($key);
             if ($existing instanceof CoffeeContribution) {
@@ -68,29 +79,58 @@ final readonly class ServeCoffee
                 return $this->replay($existing, $edition, $anonymousVisitor->id());
             }
 
-            // c. Quota (§8.2) : compté sous le verrou → jamais de dépassement.
-            $count = $this->coffeeContributionRepository->countForVisitorAndEdition($edition->id(), $anonymousVisitor->id());
-            if ($count >= CoffeeQuota::MAX_PER_VISITOR) {
-                throw new CoffeeLimitReached('Quota de café atteint pour ce visiteur.');
-            }
+            // c. Validation : quota (§8.2) compté sous le verrou → jamais de dépassement.
+            $count = $this->tracer->trace('coffee.contribution.validate', $spanAttributes, function (SpanScope $spanScope) use ($edition, $anonymousVisitor): int {
+                $count = $this->coffeeContributionRepository->countForVisitorAndEdition($edition->id(), $anonymousVisitor->id());
+                $spanScope->setAttribute('coffee.contribution.count', $count);
+                if ($count >= CoffeeQuota::MAX_PER_VISITOR) {
+                    $this->metrics->counter('duck.coffee.rejected');
 
-            // d/e. Insert + recalcul d'énergie (une seule fois pour ce café).
+                    throw new CoffeeLimitReached('Quota de café atteint pour ce visiteur.');
+                }
+
+                return $count;
+            });
+
+            // d. Recalcul d'énergie (une seule fois pour ce café).
             $previousEnergy = $edition->energy();
-            $edition->recordCoffee();
-            $coffeeContribution = CoffeeContribution::record(
-                $this->identifierGenerator->nextIdentifier(),
-                $edition->id(),
-                $anonymousVisitor->id(),
-                $key,
-                $clientActionId,
-                $previousEnergy,
-                $edition->energy(),
-                $this->clock->now(),
-            );
-            $this->coffeeContributionRepository->add($coffeeContribution);
-            $this->fridayEditionRepository->save($edition);
+            $previousOvercaffeination = $edition->overcaffeinationCount();
+            $this->tracer->trace('energy.recalculate', $spanAttributes, static function (SpanScope $spanScope) use ($edition): void {
+                $edition->recordCoffee();
+                $spanScope->setAttribute('duck.energy', $edition->energy());
+            });
 
-            // f. commit (assuré par le wrapper transactionnel).
+            // e. Persistance de la contribution + de l'édition mutée.
+            $coffeeContribution = $this->tracer->trace('coffee.contribution.persist', $spanAttributes, function () use ($edition, $anonymousVisitor, $key, $clientActionId, $previousEnergy): CoffeeContribution {
+                $coffeeContribution = CoffeeContribution::record(
+                    $this->identifierGenerator->nextIdentifier(),
+                    $edition->id(),
+                    $anonymousVisitor->id(),
+                    $key,
+                    $clientActionId,
+                    $previousEnergy,
+                    $edition->energy(),
+                    $this->clock->now(),
+                );
+                $this->coffeeContributionRepository->add($coffeeContribution);
+                $this->fridayEditionRepository->save($edition);
+
+                return $coffeeContribution;
+            });
+
+            // Métriques métier ÉMISES À LA MUTATION (§26.4), pas dans un chemin séparé.
+            $this->recordCoffeeMetrics($edition, $previousOvercaffeination);
+
+            // f. Événement temps réel écrit dans l'OUTBOX, DANS cette transaction
+            // (invariant A) : si le commit échoue, ni le café ni l'événement
+            // n'existent. La publication Mercure est différée au relais (6b). Émis
+            // SEULEMENT sur acceptation réelle — le rejeu (plus haut) sort avant.
+            $this->domainEventPublisher->publish(
+                $fridayDate,
+                new EnergyChanged($edition->energy(), $edition->energyVersion(), $clientActionId),
+            );
+
+            // g. commit (assuré par le wrapper transactionnel) → café + outbox atomiques.
             return new CoffeeResult(
                 replayed: false,
                 contributionId: $coffeeContribution->id(),
@@ -103,6 +143,31 @@ final readonly class ServeCoffee
                 reachedThreshold: $previousEnergy < 100 && $edition->energy() >= 100,
             );
         });
+    }
+
+    private function recordCoffeeMetrics(FridayEdition $fridayEdition, int $previousOvercaffeination): void
+    {
+        $this->metrics->counter('duck.coffee.total');
+        $this->metrics->gauge('duck.energy', $fridayEdition->energy());
+        $this->metrics->gauge('duck.energy.state', 1, ['state' => $this->energyState($fridayEdition->energy())]);
+
+        $overcaffeinationDelta = $fridayEdition->overcaffeinationCount() - $previousOvercaffeination;
+        if ($overcaffeinationDelta > 0) {
+            $this->metrics->counter('duck.overcaffeination.total', $overcaffeinationDelta);
+        }
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    private function energyState(int $energy): string
+    {
+        return match (true) {
+            $energy >= 100 => 'overcaffeinated',
+            $energy >= 50 => 'energetic',
+            $energy > 0 => 'waking',
+            default => 'asleep',
+        };
     }
 
     private function lockedOrCurrentEdition(\DateTimeImmutable $fridayDate, string $timezone): FridayEdition

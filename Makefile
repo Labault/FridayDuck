@@ -8,6 +8,14 @@
 # Docker Compose binary (override with `make up DC="docker-compose"` if needed).
 DC ?= docker compose
 
+# Silence le E_USER_WARNING des paquets d'auto-instrumentation OpenTelemetry quand
+# l'extension PECL `opentelemetry` est ABSENTE — le cas sur l'hôte de dev et en CI
+# (le warning est émis à l'autoload Composer, donc trop tôt pour .env*). Les images
+# Docker installent l'ext (Dockerfile) et N'héritent PAS de cette variable : elles
+# gardent l'instrumentation active. Voir docs/observability.md (« Hôte sans ext »).
+OTEL_PHP_DISABLED_INSTRUMENTATIONS ?= all
+export OTEL_PHP_DISABLED_INSTRUMENTATIONS
+
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'

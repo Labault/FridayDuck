@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Application\Visitor;
 
+use App\Application\Telemetry\Metrics;
 use App\Domain\Shared\Clock\ClockInterface;
 use App\Domain\Shared\Identity\IdentifierGenerator;
 use App\Domain\Shared\Persistence\ConcurrentCreationException;
@@ -21,6 +22,8 @@ final readonly class RecordFridayVisit
         private FridayVisitRepository $fridayVisitRepository,
         private IdentifierGenerator $identifierGenerator,
         private ClockInterface $clock,
+        // Optionnel : autowiré en prod (métrique duck.friday.unique_visitors), null en test.
+        private ?Metrics $metrics = null,
     ) {
     }
 
@@ -42,6 +45,8 @@ final readonly class RecordFridayVisit
 
         try {
             $this->fridayVisitRepository->add($fridayVisit);
+            // PREMIER passage de ce visiteur sur l'édition → visiteur unique (§26.4).
+            $this->metrics?->counter('duck.friday.unique_visitors');
         } catch (ConcurrentCreationException) {
             $winner = $this->fridayVisitRepository->find($fridayEditionId, $visitorId);
             if ($winner instanceof FridayVisit) {

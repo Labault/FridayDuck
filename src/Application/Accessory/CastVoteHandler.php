@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Application\Accessory;
 
 use App\Application\Friday\ResolveCurrentFridayEdition;
-use App\Application\RealTime\AccessoryResultsUpdated;
-use App\Application\RealTime\DomainEventPublisher;
 use App\Application\Visitor\ResolveAnonymousVisitor;
 use App\Domain\Accessory\Accessory;
 use App\Domain\Accessory\AccessoryRepository;
@@ -21,7 +19,8 @@ use App\Domain\Friday\FridayCalendar;
  * GARDE TEMPORELLE EN PREMIER (invariant A) : hors vendredi → NOT_FRIDAY ; après
  * 14:00 → VOTE_CLOSED + gagnant résolu (§10.6), tous deux DÉRIVÉS DE L'HORLOGE.
  * Le vendredi avant 14:00 : résout identité/édition/options, valide l'accessoire,
- * vote dans la transaction verrouillée, puis publie POST-COMMIT (invariant E).
+ * vote dans la transaction verrouillée — qui écrit aussi les résultats dans
+ * l'outbox (§20.6, atomicité). Un relais les publiera.
  */
 final readonly class CastVoteHandler
 {
@@ -33,10 +32,8 @@ final readonly class CastVoteHandler
         private ResolveAccessoryOptions $resolveAccessoryOptions,
         private ResolveAccessoryWinner $resolveAccessoryWinner,
         private AccessoryRepository $accessoryRepository,
-        private AccessoryOptionsReader $accessoryOptionsReader,
         private AccessoryWinnerViewBuilder $accessoryWinnerViewBuilder,
         private CastVote $castVote,
-        private DomainEventPublisher $domainEventPublisher,
     ) {
     }
 
@@ -74,27 +71,9 @@ final readonly class CastVoteHandler
             return VoteOutcome::invalidAccessory();
         }
 
-        // POST-COMMIT (invariant E) : résultats diffusés, SEULEMENT sur vote accepté.
-        $this->domainEventPublisher->publish(
-            $fridayState->fridayDate,
-            new AccessoryResultsUpdated($result->resultsSequence, $this->resultsSnapshot($fridayEdition->id())),
-        );
-
+        // Les résultats (ACCESSORY_RESULTS_UPDATED) sont désormais écrits dans
+        // l'outbox PAR `cast()`, dans la transaction du vote (§20.6, invariant A) ;
+        // un relais les publiera. Le handler n'a plus à diffuser.
         return VoteOutcome::accepted(new AcceptedVote($result->voteId, $accessory->code(), $result->resultsSequence));
-    }
-
-    /**
-     * @return list<array{code: string, displayOrder: int, voteCount: int}>
-     */
-    private function resultsSnapshot(string $fridayEditionId): array
-    {
-        return array_map(
-            static fn (AccessoryOptionView $accessoryOptionView): array => [
-                'code' => $accessoryOptionView->code,
-                'displayOrder' => $accessoryOptionView->displayOrder,
-                'voteCount' => $accessoryOptionView->voteCount,
-            ],
-            $this->accessoryOptionsReader->forEdition($fridayEditionId),
-        );
     }
 }
