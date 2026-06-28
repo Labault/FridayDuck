@@ -192,4 +192,5 @@ backup-now: ## Lance une sauvegarde immédiate (via le service systemd)
 	sudo journalctl -u canard-backup.service -n 30 --no-pager
 
 backup-restore-test: ## Teste la restauration vers une cible JETABLE (jamais la prod)
-	sudo /opt/canard-backup/restore-test.sh
+	sudo systemctl start canard-restore-test.service
+	sudo journalctl -u canard-restore-test.service -n 30 --no-pager

@@ -33,7 +33,14 @@ dans un PostgreSQL éphémère, le vérifie, puis le détruit — la prod n'est 
 touchée.
 
 ```bash
-sudo /opt/canard-backup/restore-test.sh
+# Via systemd : l'EnvironmentFile (secrets restic) est chargé automatiquement.
+sudo systemctl start canard-restore-test.service
+sudo journalctl -u canard-restore-test.service -n 30 --no-pager
+
+# Lancement direct du script : il faut charger les secrets d'abord, sinon
+# RESTIC_REPOSITORY est vide et le script s'arrête.
+set -a; . /etc/canard-backup/backup.env; set +a
+sudo -E /opt/canard-backup/restore-test.sh
 ```
 
 Manuellement, étape par étape (équivalent du script) :
