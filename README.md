@@ -37,20 +37,64 @@ SVG + Theatre.js plutôt que Rive.
 
 ## Démarrage rapide
 
+**Prérequis :** Docker (via OrbStack, jamais Docker Desktop) pour faire tourner
+l'app ; PHP 8.4+ et Composer sur la machine pour l'outillage qualité.
+
 ```sh
-# 1. Dépendances PHP
-composer install
+# 1. Configuration locale
+cp .env.example .env        # ajuster DATABASE_URL, MERCURE_*, APP_FAKE_NOW… au besoin
 
-# 2. Configuration locale
-cp .env.example .env        # puis ajuster DATABASE_URL, MERCURE_*, etc.
+# 2. Démarrer la stack (app FrankenPHP + PostgreSQL) en arrière-plan
+make up                     # build + up + healthcheck bloquant
 
-# 3. Qualité (les outils viennent de la machine, pas du dépôt)
-make qa                     # composer validate + CS-Fixer + PHPStan + tests
+# 3. Outillage qualité (les outils viennent de la machine, pas du dépôt)
+composer install            # nécessaire pour PHPStan / CS-Fixer / tests en local
+make qa                     # lint + PHPStan (niveau 9) + tests
 ```
+
+Une fois `make up` terminé, l'app répond sur **`https://localhost`** (certificat
+auto-signé par FrankenPHP — à accepter une fois dans le navigateur).
+
+### Ports & accès local
+
+| Service                    | URL / port              | Quoi                                              |
+| -------------------------- | ----------------------- | ------------------------------------------------- |
+| **App (dev)**              | `https://localhost`     | l'app — FrankenPHP en mode worker (HTTP `80` redirige vers HTTPS `443`) |
+| PostgreSQL                 | `localhost:5432`        | base de données                                   |
+| E2E — `app-friday`         | `http://localhost:8081` | fixture de test, horloge **gelée un vendredi matin** |
+| E2E — `app-afternoon`      | `http://localhost:8082` | fixture de test, vendredi après-midi              |
+| E2E — `app-dormant`        | `http://localhost:8083` | fixture de test, jour dormant (le canard dort)    |
+
+> ⚠️ **Piège :** `localhost:8081`–`8083` sont les instances de la **stack E2E**
+> (`compose.e2e.yaml`), à horloge figée pour des tests déterministes — **pas** ta
+> stack de dev. Elles sont buildées au lancement de la suite E2E et peuvent servir
+> un ancien code. Pour voir tes changements, c'est **`https://localhost`**.
+
+Les ports sont surchargeables via `HTTP_PORT` / `HTTPS_PORT` / `POSTGRES_PORT`
+(voir `.env.example`).
+
+### Commandes `make`
+
+| Commande              | Effet                                                       |
+| --------------------- | ----------------------------------------------------------- |
+| `make up` / `make down` | Démarrer / arrêter la stack de dev (app + base)           |
+| `make logs`           | Suivre les logs de l'app (`docker compose logs -f app`)     |
+| `make sh`             | Ouvrir un shell dans le conteneur app                       |
+| `make qa`             | Toutes les vérifs : `lint` + `stan` + `test`                |
+| `make stan`           | PHPStan niveau 9                                            |
+| `make cs` / `make cs-fix` | PHP-CS-Fixer (vérif / correction)                       |
+| `make rector` / `make rector-fix` | Rector (aperçu / application)                   |
+| `make fix`            | Auto-fix complet (CS-Fixer + Rector)                        |
+| `make hooks`          | Installer les hooks git (pre-commit + commit-msg)           |
 
 > Le serveur est l'**unique source de vérité** temporelle et métier. En
 > développement, un vendredi peut être simulé via `APP_FAKE_NOW` (voir
 > `.env.example` et §7.4). Cette variable doit être **neutralisée en production**.
+>
+> **Worker FrankenPHP :** le kernel (routeur compris) est chargé une fois au boot
+> et gardé en mémoire. Après un changement de route ou de config compilée, un
+> `make down && make up` est nécessaire pour que le worker reparte à neuf — éditer
+> le code seul ne suffit pas.
 
 ## Documentation
 
