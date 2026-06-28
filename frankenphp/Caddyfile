@@ -2,6 +2,10 @@
 	{$CADDY_GLOBAL_OPTIONS}
 
 	frankenphp {
+		# Mode worker Symfony (§22.2), injecté par FRANKENPHP_CONFIG :
+		#   prod → "worker ./public/index.php"  (kernel en RAM, perf)
+		#   dev  → vide → mode classique, kernel reconstruit à chaque requête
+		#          (aucune route périmée ; cf. Dockerfile frankenphp_dev)
 		{$FRANKENPHP_CONFIG}
 	}
 }
@@ -52,14 +56,6 @@
 	@frontController path index.php
 	php @frontController {
 		{$FRANKENPHP_SITE_CONFIG}
-
-		# Mode worker Symfony : le kernel est amorcé une fois et réutilisé entre
-		# les requêtes (§22.2). Support NATIF via symfony/runtime ≥ 7.4
-		# (FrankenPhpWorkerRunner) — aucun APP_RUNTIME ni paquet supplémentaire.
-		worker {
-			file ./public/index.php
-			{$FRANKENPHP_WORKER_CONFIG}
-		}
 	}
 
 	file_server {

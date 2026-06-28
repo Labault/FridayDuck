@@ -81,16 +81,21 @@ les tests.
 
 ### Le mode worker, en un mot
 
-FrankenPHP sert l'appli en **mode worker** : le kernel Symfony est amorcé **une
-fois** au démarrage du process, puis réutilisé entre les requêtes (§22.2). C'est
-rapide, mais ça impose une règle : **les services doivent être *stateless*** —
-aucun état visiteur ne doit survivre d'une requête à l'autre.
+En **E2E et en prod**, FrankenPHP sert l'appli en **mode worker** : le kernel
+Symfony est amorcé **une fois** au démarrage du process, puis réutilisé entre les
+requêtes (§22.2). C'est rapide, mais ça impose une règle : **les services doivent
+être *stateless*** — aucun état visiteur ne doit survivre d'une requête à l'autre.
 
-> ⚠️ **Conséquence pratique sur le code « en mémoire ».** Comme le kernel persiste,
-> du code compilé (routes, conteneur DI) est chargé au boot du worker. En **dev**,
-> ce n'est pas un souci : le worker tourne en mode *watch* et **redémarre à chaud
-> dès qu'un fichier change** (voir §5). En **E2E/prod**, le code est figé dans
-> l'image — il faut reconstruire (voir §5–§6).
+En **dev**, le worker est **désactivé** : FrankenPHP sert en mode classique, le
+kernel est reconstruit à chaque requête. On perd la perf du worker (sans
+importance en local), on gagne le confort absolu : **aucun code compilé ne
+survit, donc aucune route ni config périmée** après une modif.
+
+> ⚠️ **Conséquence pratique sur le code « en mémoire ».** En E2E/prod, comme le
+> kernel persiste dans le worker, du code compilé (routes, conteneur DI) est chargé
+> au boot — et le code est figé dans l'image, donc il faut reconstruire (voir
+> §5–§6). En **dev**, ce piège n'existe pas : pas de worker, le kernel se
+> reconstruit à chaque requête, tes modifs sont **toujours** live (voir §5).
 
 ---
 
@@ -243,7 +248,8 @@ appli, et elles ne se comportent pas pareil **vis-à-vis du code**.
 | Fichier compose | `compose.yaml` | `compose.e2e.yaml` | `compose.prod.yaml` |
 | Stage Docker (`target`) | `frankenphp_dev` | `frankenphp_prod` | `frankenphp_prod` |
 | **Où vit le code** | **bind-monté** (`./:/app`) | **baké dans l'image** | **baké dans l'image** |
-| Prise en compte d'une modif | **à chaud** (watch) | **rebuild requis** | **redéploiement requis** |
+| Worker FrankenPHP | **désactivé** (mode classique) | **activé** | **activé** |
+| Prise en compte d'une modif | **à chaud** (kernel par requête) | **rebuild requis** | **redéploiement requis** |
 | `APP_ENV` | `dev` | `preprod` | `prod` |
 | Horloge | réelle ou `APP_FAKE_NOW` | **gelée** (`APP_FAKE_NOW`) | **réelle** (garde-fou) |
 | Base | `app` (port 5432) | `app_e2e` (isolée) | base de prod |
@@ -266,14 +272,14 @@ appli, et elles ne se comportent pas pareil **vis-à-vis du code**.
                                                  │
    Éditer un fichier =                 Éditer un fichier ne change RIEN
    le conteneur le voit                tant que tu n'as pas reconstruit
-   tout de suite (+ watch              l'image (npm run e2e:up / redeploy)
-   redémarre le worker)
+   tout de suite (pas de worker :      l'image (npm run e2e:up / redeploy)
+   kernel rebâti à chaque requête)
 ```
 
 - **Dev** : le dossier du projet est **monté** dans le conteneur (`./:/app`). Le
-  conteneur lit **tes fichiers en direct**. En plus, le worker tourne en *watch* :
-  il **redémarre dès qu'un fichier change**. Tu édites une route → c'est pris en
-  compte **sans rien relancer**.
+  conteneur lit **tes fichiers en direct**. En plus, **pas de worker** : le kernel
+  est reconstruit à chaque requête, donc rien ne reste en RAM. Tu édites une route
+  → c'est pris en compte **sans rien relancer**.
 - **E2E / Prod** : le `Dockerfile` fait `COPY --link . ./` au build (stage
   `frankenphp_prod`). Le code est **photographié dans l'image**. Tant que tu ne
   reconstruis pas l'image, le conteneur sert **l'ancien code**, quoi que tu fasses
@@ -391,8 +397,9 @@ veut pour des tests déterministes.
 
 **C'est LE point clé**, et la différence fondamentale avec la dev.
 
-En **dev**, tu édites un fichier → le conteneur le voit en direct (bind-mount) et
-le worker redémarre tout seul (watch). **Rien à faire.**
+En **dev**, tu édites un fichier → le conteneur le voit en direct (bind-mount) et,
+comme il n'y a **pas de worker**, le kernel se reconstruit à la requête suivante.
+**Rien à faire.**
 
 En **E2E**, le code est **baké dans l'image** au `docker build`. Éditer un fichier
 PHP ou Twig **ne change rien** aux conteneurs déjà lancés : ils continuent de
@@ -413,7 +420,7 @@ l'ancien comportement » → parce que tu n'as pas reconstruit l'image E2E.
 ```text
    Modif de code
         │
-        ├─ DEV  : rien à faire (bind-mount + watch)            → visible sur https://localhost
+        ├─ DEV  : rien à faire (bind-mount, sans worker)       → visible sur https://localhost
         │
         ├─ E2E  : npm run e2e:up   (rebuild de l'image)        → visible sur :8081/8082/8083
         │
@@ -493,6 +500,6 @@ curl -s https://tibec.labault.dev/health                         # version dépl
 
 | Tu veux voir ta modif sur… | Fais… |
 | --- | --- |
-| `https://localhost` (dev) | rien (bind-mount + watch) |
+| `https://localhost` (dev) | rien (bind-mount, sans worker) |
 | `localhost:8081/82/83` (E2E) | `npm run e2e:up` (rebuild) |
 | `tibec.labault.dev` (prod) | `git push main` (redéploiement) |

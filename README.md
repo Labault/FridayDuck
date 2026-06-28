@@ -59,7 +59,7 @@ auto-signé par FrankenPHP — à accepter une fois dans le navigateur).
 
 | Service                    | URL / port              | Quoi                                              |
 | -------------------------- | ----------------------- | ------------------------------------------------- |
-| **App (dev)**              | `https://localhost`     | l'app — FrankenPHP en mode worker (HTTP `80` redirige vers HTTPS `443`) |
+| **App (dev)**              | `https://localhost`     | l'app — FrankenPHP en mode classique, sans worker (HTTP `80` redirige vers HTTPS `443`) |
 | PostgreSQL                 | `localhost:5432`        | base de données                                   |
 | E2E — `app-friday`         | `http://localhost:8081` | fixture de test, horloge **gelée un vendredi matin** |
 | E2E — `app-afternoon`      | `http://localhost:8082` | fixture de test, vendredi après-midi              |
@@ -99,12 +99,13 @@ Les ports sont surchargeables via `HTTP_PORT` / `HTTPS_PORT` / `POSTGRES_PORT`
 > `.env.example` et §7.4). Cette variable doit être **neutralisée en production**.
 >
 > **Dev vs E2E/prod — où vit le code :** en dev, le code est **bind-monté**
-> (`./:/app`) et le worker FrankenPHP tourne en mode *watch* → il redémarre à
-> chaud dès qu'un fichier change, donc tes modifs (routes incluses) sont prises en
-> compte **sans rien relancer**. En E2E et en prod, le code est **baké dans
-> l'image** au build : éditer une source ne change rien tant que l'image n'est pas
-> reconstruite (E2E : `npm run e2e:up` ; prod : redéploiement). Détails dans le
-> [guide technique](docs/guide-technique.md).
+> (`./:/app`) et FrankenPHP tourne **sans worker** (mode classique) → le kernel,
+> routeur compris, est reconstruit à chaque requête, donc tes modifs (routes
+> incluses) sont prises en compte **sans rien relancer**. En E2E et en prod, le
+> worker FrankenPHP est **activé** (kernel en RAM, pour la perf) et le code est
+> **baké dans l'image** au build : éditer une source ne change rien tant que
+> l'image n'est pas reconstruite (E2E : `npm run e2e:up` ; prod : redéploiement).
+> Détails dans le [guide technique](docs/guide-technique.md).
 
 ## Documentation
 

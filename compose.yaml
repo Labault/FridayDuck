@@ -36,8 +36,6 @@ services:
       # En dev, autorise le navigateur servi en HTTPS local à s'abonner (CORS).
       MERCURE_EXTRA_DIRECTIVES: |
         cors_origins https://${SERVER_NAME:-localhost}
-      # Recharge à chaud du worker en dev (cf. Dockerfile frankenphp_dev).
-      FRANKENPHP_WORKER_CONFIG: watch
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
       # Télémétrie (§26) : VIDE = désactivée. Pour la vérif locale, pointer sur le
       # Collector du stack d'observabilité (compose.observability.yaml), joignable

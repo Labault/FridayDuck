@@ -79,9 +79,10 @@ FROM frankenphp_base AS frankenphp_dev
 
 ENV APP_ENV=dev
 ENV XDEBUG_MODE=off
-# Worker en mode "watch" : le kernel persiste entre requêtes mais redémarre dès
-# qu'un fichier change — confort de dev sans sacrifier le mode worker (§22.2).
-ENV FRANKENPHP_WORKER_CONFIG=watch
+# Pas de worker en dev : FRANKENPHP_CONFIG reste VIDE → FrankenPHP sert en mode
+# classique, le kernel (routeur compris) est reconstruit à chaque requête. Aucun
+# état en RAM = aucune route périmée après une modif (§22.2). Le worker n'est
+# activé qu'en prod (stage frankenphp_prod).
 
 RUN <<-EOF
 	mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
@@ -91,7 +92,7 @@ EOF
 
 COPY --link frankenphp/conf.d/20-app.dev.ini $PHP_INI_DIR/app.conf.d/
 
-CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile", "--watch"]
+# CMD hérité de la base (`frankenphp run`, sans worker ni --watch).
 
 # ─── Prod ────────────────────────────────────────────────────────────────────
 # Image de production (§31.4) : sans outils de dev, version exposée, health check,
@@ -101,6 +102,9 @@ CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile", "--watch"]
 FROM frankenphp_base AS frankenphp_prod
 
 ENV APP_ENV=prod
+# Worker FrankenPHP ACTIVÉ en prod (kernel en RAM, perf). Mécanisme standard
+# symfony-docker : FRANKENPHP_CONFIG alimente le bloc `frankenphp {}` du Caddyfile.
+ENV FRANKENPHP_CONFIG="worker ./public/index.php"
 
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
