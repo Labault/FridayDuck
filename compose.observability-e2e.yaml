@@ -74,7 +74,8 @@ services:
       MERCURE_PUBLIC_URL: "http://localhost:8090/.well-known/mercure"
       MERCURE_EXTRA_DIRECTIVES: "anonymous\ncors_origins http://localhost:8090"
     healthcheck:
-      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://localhost/health') === false ? 1 : 0);"]
+      # Readiness (base incluse) : les tests E2E ne doivent pas démarrer avant la base.
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://localhost/health/ready') === false ? 1 : 0);"]
       interval: 5s
       timeout: 5s
       retries: 20

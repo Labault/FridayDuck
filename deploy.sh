@@ -10,9 +10,9 @@
 #   2. build de l'image prod                       (assets + .env.local.php)
 #   3. base up + migrations Doctrine (gate)        (--all-or-nothing)
 #   4. app + worker + relay up
-#   5. HEALTHCHECK HTTP BLOQUANT                    (rouge → rollback auto + exit 1)
+#   5. READINESS HTTP BLOQUANTE (/health/ready)    (rouge → rollback auto + exit 1)
 #
-# Idempotent et sûr à rejouer. NE bascule JAMAIS le trafic avant un /health vert.
+# Idempotent et sûr à rejouer. NE bascule JAMAIS le trafic avant /health/ready vert.
 set -euo pipefail
 
 cd "$(dirname "$0")"
@@ -102,26 +102,31 @@ ok "Migrations appliquées."
 log "Démarrage de l'application, du worker et du relais…"
 compose up -d app worker relay
 
-# ── 5. HEALTHCHECK HTTP BLOQUANT (/health 3 couches, base incluse) ────────────
-log "Attente du healthcheck (/health) — timeout ${HEALTH_TIMEOUT}s…"
-app_cid="$(compose ps -q app)"
+# ── 5. READINESS HTTP BLOQUANTE (/health/ready : base incluse) ────────────────
+# On NE lit PLUS le statut Docker : la sonde Docker récurrente est une LIVENESS
+# (/health, sans base) pour éviter les restart-loops si la base flanche en prod.
+# Le GATE de déploiement, lui, EXIGE la base : on interroge /health/ready
+# (SELECT 1) via le vhost interne. file_get_contents → false sur 503/refus.
+log "Attente de la readiness (/health/ready, base incluse) — timeout ${HEALTH_TIMEOUT}s…"
 elapsed=0
-healthy=0
+ready=0
 while [ "$elapsed" -lt "$HEALTH_TIMEOUT" ]; do
-  status="$(docker inspect -f '{{.State.Health.Status}}' "$app_cid" 2>/dev/null || echo starting)"
-  if [ "$status" = healthy ]; then healthy=1; break; fi
+  # shellcheck disable=SC2016  # code PHP : ne pas laisser le shell hôte interpréter l'appel.
+  if compose exec -T app php -r 'exit(@file_get_contents("http://app/health/ready") === false ? 1 : 0);' >/dev/null 2>&1; then
+    ready=1; break
+  fi
   sleep 3; elapsed=$((elapsed + 3))
 done
 
-if [ "$healthy" != 1 ]; then
-  err "Healthcheck ROUGE après ${HEALTH_TIMEOUT}s (statut: ${status:-inconnu})."
+if [ "$ready" != 1 ]; then
+  err "Readiness ROUGE après ${HEALTH_TIMEOUT}s (/health/ready ≠ 200 — base injoignable ?)."
   compose logs --tail=50 app >&2 || true
   rollback
   exit 1
 fi
 
-# Confirmation lisible du corps de /health (version + base) via le vhost interne.
+# Confirmation lisible du corps de /health/ready (statut + base + version).
 # shellcheck disable=SC2016  # code PHP : ne pas laisser le shell hôte interpréter $r.
-compose exec -T app php -r '$r=@file_get_contents("http://app/health"); echo $r ? $r.PHP_EOL : "no body".PHP_EOL;' || true
-ok "Healthcheck VERT — version ${APP_VERSION} en ligne."
+compose exec -T app php -r '$r=@file_get_contents("http://app/health/ready"); echo $r ? $r.PHP_EOL : "no body".PHP_EOL;' || true
+ok "Readiness VERTE — version ${APP_VERSION} en ligne."
 log "Smoke test : ./scripts/smoke-test.sh   (valide le comportement réel sur le domaine public)"

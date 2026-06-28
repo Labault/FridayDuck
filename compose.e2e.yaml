@@ -34,7 +34,8 @@ x-app-base: &app-base
     MERCURE_SUBSCRIBER_JWT_KEY: "!ChangeThisMercureHubJWTSecretKey!"
     OTEL_EXPORTER_OTLP_ENDPOINT: ""
   healthcheck:
-    test: ["CMD", "php", "-r", "exit(@file_get_contents('http://localhost/health') === false ? 1 : 0);"]
+    # Readiness (base incluse) : les tests E2E ne doivent pas démarrer avant la base.
+    test: ["CMD", "php", "-r", "exit(@file_get_contents('http://localhost/health/ready') === false ? 1 : 0);"]
     interval: 5s
     timeout: 5s
     retries: 20

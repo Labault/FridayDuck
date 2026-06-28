@@ -1,7 +1,8 @@
 # Le Canard du Vendredi — stack de DÉVELOPPEMENT.
 #
 #   make up        (docker compose up -d --build)
-#   /health        → 200 si l'app boote ET que la base répond
+#   /health        → 200 « OK » tant que le process répond (liveness, sans base)
+#   /health/ready  → 200 si la base répond aussi (readiness, SELECT 1)
 #   /.well-known/mercure  → hub Mercure CO-LOCALISÉ dans le process Caddy
 #
 # Deux services seulement : `app` (FrankenPHP + Caddy + hub Mercure intégré) et

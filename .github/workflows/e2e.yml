@@ -38,9 +38,9 @@ jobs:
       - name: Wait for the apps to be healthy
         run: |
           for port in 8081 8082 8083; do
-            echo "Attente de http://localhost:$port/health ..."
+            echo "Attente de http://localhost:$port/health/ready ..."
             for i in $(seq 1 60); do
-              if curl -fsS "http://localhost:$port/health" >/dev/null 2>&1; then
+              if curl -fsS "http://localhost:$port/health/ready" >/dev/null 2>&1; then
                 echo "port $port OK"; break
               fi
               if [ "$i" -eq 60 ]; then echo "port $port KO"; exit 1; fi

@@ -13,29 +13,41 @@ use Symfony\Component\HttpFoundation\Response;
 #[CoversClass(HealthController::class)]
 final class HealthControllerTest extends TestCase
 {
-    public function testReturns200AndOkStatusWhenDatabaseIsUp(): void
+    public function testLivenessReturns200PlainOkWithoutTouchingDatabase(): void
+    {
+        // Base DOWN : la liveness ne la consulte pas et reste verte.
+        $controller = new HealthController($this->databaseHealth(false), '1.2.3');
+
+        $response = $controller->live();
+
+        self::assertSame(Response::HTTP_OK, $response->getStatusCode());
+        self::assertSame('OK', $response->getContent());
+        self::assertStringStartsWith('text/plain', (string) $response->headers->get('Content-Type'));
+    }
+
+    public function testReadinessReturns200AndOkStatusWhenDatabaseIsUp(): void
     {
         $controller = new HealthController($this->databaseHealth(true), '1.2.3');
 
-        $response = $controller();
+        $response = $controller->ready();
 
         self::assertSame(Response::HTTP_OK, $response->getStatusCode());
         self::assertJsonStringEqualsJsonString(
-            '{"status":"ok","version":"1.2.3","checks":{"database":"up"}}',
+            '{"status":"ok","db":"up","version":"1.2.3"}',
             (string) $response->getContent(),
         );
     }
 
-    public function testReturns503AndDegradedStatusWhenDatabaseIsDown(): void
+    public function testReadinessReturns503WhenDatabaseIsDown(): void
     {
         // Version vide → repli sur « dev ».
         $controller = new HealthController($this->databaseHealth(false), '');
 
-        $response = $controller();
+        $response = $controller->ready();
 
         self::assertSame(Response::HTTP_SERVICE_UNAVAILABLE, $response->getStatusCode());
         self::assertJsonStringEqualsJsonString(
-            '{"status":"degraded","version":"dev","checks":{"database":"down"}}',
+            '{"status":"error","db":"down","version":"dev"}',
             (string) $response->getContent(),
         );
     }

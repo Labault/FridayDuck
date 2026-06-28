@@ -11,10 +11,19 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Health check d'INFRASTRUCTURE (§31.4).
+ * Sondes de santé d'INFRASTRUCTURE (§31.4). Aucune notion métier (énergie,
+ * café, vendredi…) : de la pure plomberie. Deux sondes, deux rôles distincts.
  *
- * 200 si l'application a amorcé ET que la base répond, 503 sinon. Aucune notion
- * métier (énergie, café, vendredi…) : ce n'est qu'une sonde de plomberie.
+ *  - LIVENESS (`/health`) : « le process répond-il ? ». AUCUNE dépendance testée.
+ *    Destinée au HEALTHCHECK Docker récurrent : une sonde qui taperait la base en
+ *    boucle provoquerait des restart-loops quand c'est la base — pas l'app — qui
+ *    flanche. L'app reste debout et dégrade ; on ne la redémarre pas pour rien.
+ *
+ *  - READINESS (`/health/ready`) : « peut-on servir le trafic ? ». Ping `SELECT 1`
+ *    sur PostgreSQL. C'est le GATE de déploiement (cf. deploy.sh) : 503 si la base
+ *    est injoignable → le déploiement échoue. Mercure est VOLONTAIREMENT exclu :
+ *    s'il tombe, la page charge quand même (le temps réel dégrade), pas de quoi
+ *    bloquer une mise en ligne.
  */
 final readonly class HealthController
 {
@@ -25,18 +34,24 @@ final readonly class HealthController
     ) {
     }
 
-    #[Route('/health', name: 'health', methods: ['GET'])]
-    public function __invoke(): JsonResponse
+    /** Liveness : ultra-léger, sans dépendance. 200 « OK » tant que le process répond. */
+    #[Route('/health', name: 'health_live', methods: ['GET'])]
+    public function live(): Response
+    {
+        return new Response('OK', Response::HTTP_OK, ['Content-Type' => 'text/plain; charset=UTF-8']);
+    }
+
+    /** Readiness : 200 si la base répond, 503 sinon. */
+    #[Route('/health/ready', name: 'health_ready', methods: ['GET'])]
+    public function ready(): JsonResponse
     {
         $databaseUp = $this->databaseHealth->isAvailable();
 
         return new JsonResponse(
             [
-                'status' => $databaseUp ? 'ok' : 'degraded',
+                'status' => $databaseUp ? 'ok' : 'error',
+                'db' => $databaseUp ? 'up' : 'down',
                 'version' => '' !== $this->appVersion ? $this->appVersion : 'dev',
-                'checks' => [
-                    'database' => $databaseUp ? 'up' : 'down',
-                ],
             ],
             $databaseUp ? Response::HTTP_OK : Response::HTTP_SERVICE_UNAVAILABLE,
         );

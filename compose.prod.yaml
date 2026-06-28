@@ -38,7 +38,7 @@ x-app-env: &app-env
   APP_SECRET: ${APP_SECRET:?APP_SECRET manquant (voir .env.prod.local.dist)}
   # APP_VERSION n'est PAS injecté au runtime : c'est une propriété de l'IMAGE,
   # gravée au build (ARG APP_VERSION) et lue au runtime depuis l'ENV de l'image.
-  # Ainsi /health reflète la version réellement déployée, y compris après rollback.
+  # Ainsi /health/ready reflète la version réellement déployée, y compris après rollback.
   # Domaine public, SOURCE UNIQUE : on en dérive DEFAULT_URI et MERCURE_PUBLIC_URL
   # (un seul nom à renseigner sur le VPS → pas de typo entre deux URLs).
   DEFAULT_URI: https://${APP_DOMAIN:?APP_DOMAIN manquant (voir .env.prod.local.dist)}
@@ -80,8 +80,10 @@ services:
       # gestion ACME/Let's Encrypt ici (c'est le rôle du Caddy global).
       SERVER_NAME: ":80"
     healthcheck:
-      # Sonde métier 3 couches (/health → 503 si la base ne répond pas), via le
-      # vhost interne HTTP. file_get_contents renvoie false sur 503 → unhealthy.
+      # LIVENESS (/health) : sans base, volontairement. Le gate « base joignable »
+      # est au DÉPLOIEMENT (/health/ready, cf. deploy.sh) — ici on ne veut PAS de
+      # restart-loop si la base flanche : une app vivante reste vivante et dégrade.
+      # file_get_contents renvoie false si le process ne répond plus → unhealthy.
       test: ["CMD", "php", "-r", "exit(@file_get_contents('http://app/health') === false ? 1 : 0);"]
       interval: 10s
       timeout: 5s

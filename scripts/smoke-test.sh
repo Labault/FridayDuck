@@ -21,12 +21,12 @@ fail() { printf '\033[1;31m✗ %s\033[0m\n' "$*" >&2; exit 1; }
 
 printf '\033[1;36m▶ Smoke test sur %s\033[0m\n' "$BASE_URL"
 
-# ── 1. /health : 200, status ok, base up ──────────────────────────────────────
-health="$("${CURL[@]}" "$BASE_URL/health")" || fail "/health injoignable"
-echo "$health" | grep -q '"status":"ok"'     || fail "/health status ≠ ok : $health"
-echo "$health" | grep -q '"database":"up"'   || fail "/health database ≠ up : $health"
-version="$(printf '%s' "$health" | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')"
-pass "/health OK (version=${version:-?}, base up)"
+# ── 1. /health/ready : 200, status ok, base up ────────────────────────────────
+ready="$("${CURL[@]}" "$BASE_URL/health/ready")" || fail "/health/ready injoignable"
+echo "$ready" | grep -q '"status":"ok"'  || fail "/health/ready status ≠ ok : $ready"
+echo "$ready" | grep -q '"db":"up"'      || fail "/health/ready db ≠ up : $ready"
+version="$(printf '%s' "$ready" | sed -n 's/.*"version":"\([^"]*\)".*/\1/p')"
+pass "/health/ready OK (version=${version:-?}, base up)"
 
 # ── 2. /api/friday/current : cohérent avec l'horloge RÉELLE (Europe/Paris) ─────
 # Prouve qu'APP_FAKE_NOW n'est PAS figé : `active` ne doit être vrai QUE le vendredi.
