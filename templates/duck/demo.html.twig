@@ -1,0 +1,82 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Le canard du vendredi{% endblock %}
+
+{% block body %}
+    {#
+        Phase 2b-ii : état initial par VALEURS TWIG (§19.3), issu du serveur
+        (autorité). Offrir un café atteint POST /api/friday/current/coffees ;
+        l'énergie officielle revient du serveur et passe par la barrière de
+        version. Pas de Mercure ici (Phase 3) : la page reflète MES actions.
+    #}
+    <section
+        class="duck-demo"
+        {{ stimulus_controller('duck', {
+            energy: friday.energy,
+            energyVersion: friday.energyVersion,
+            remainingCoffees: friday.remainingCoffees,
+            active: friday.active,
+            status: friday.status,
+            coffeesUrl: path('api_friday_coffees'),
+            mercureUrl: mercure(mercureTopic),
+            winner: friday.vote and friday.vote.winner ? {
+                code: friday.vote.winner.code,
+                label: friday.vote.winner.label,
+                slot: friday.vote.winner.slot,
+                svgGroupId: friday.vote.winner.svgGroupId,
+            } : {},
+        }) }}
+    >
+        <div class="duck-stage">
+            <div class="duck-scene" data-duck-target="scene">
+                {{ include('duck/_scene.svg.twig') }}
+            </div>
+            {# Alternative textuelle de l'accessoire porté (§28.3). #}
+            <p class="visually-hidden" role="status" data-duck-target="accessoryLabel"></p>
+        </div>
+
+        <aside class="duck-panel">
+            <div>
+                <h1>Le canard du vendredi</h1>
+                <p class="hint">
+                    Offrez un café : le serveur recalcule l'énergie officielle, le
+                    canard réagit.
+                </p>
+            </div>
+
+            <div class="duck-readout">
+                <span class="energy" data-duck-target="energyValue">{{ friday.energy }}</span>
+                <span class="state" data-duck-target="energyState">{{ friday.status }}</span>
+            </div>
+
+            <button
+                type="button"
+                class="primary"
+                data-duck-target="coffeeButton"
+                data-action="duck#serveCoffee"
+                {{ not friday.active or friday.remainingCoffees <= 0 ? 'disabled' : '' }}
+            >
+                ☕ Offrir un café
+            </button>
+
+            <p class="hint">
+                Cafés restants&nbsp;:
+                <strong data-duck-target="remainingValue">{{ friday.remainingCoffees }}</strong>
+                / 3
+            </p>
+
+            <p class="hint" role="status" data-duck-target="message"></p>
+            <p class="hint" data-duck-target="reducedFlag"></p>
+
+            {# Panneau de vote (§10) — uniquement le vendredi. #}
+            {% if friday.vote %}
+                {{ include('duck/_accessory_vote.html.twig') }}
+            {% endif %}
+
+            {# Conseil du vendredi (§11) — uniquement le vendredi. #}
+            {% if friday.advice %}
+                {{ include('duck/_advice.html.twig') }}
+            {% endif %}
+        </aside>
+    </section>
+{% endblock %}

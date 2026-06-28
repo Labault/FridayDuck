@@ -18,6 +18,17 @@
         <field name="overcaffeinationCount" column="overcaffeination_count" type="integer"/>
         <field name="createdAt" column="created_at" type="datetime_immutable"/>
         <field name="closedAt" column="closed_at" type="datetime_immutable" nullable="true"/>
+        <!-- Vote (§10) : séquence de résultats (anti-régression, DISTINCTE d'energy_version)
+            et gagnant figé après 14:00 (immuable). -->
+        <field name="resultsSequence" column="results_sequence" type="integer"/>
+        <field name="winnerAccessoryCode" column="winner_accessory_code" type="string" length="64" nullable="true"/>
+        <!-- Conseil (§11) : conseil du jour figé (immuable), séquence d'advice
+            (DISTINCTE), et compteurs de réactions dénormalisés par type. -->
+        <field name="adviceId" column="advice_id" type="string" length="26" nullable="true"/>
+        <field name="adviceSequence" column="advice_sequence" type="integer"/>
+        <field name="concerningCount" column="concerning_count" type="integer"/>
+        <field name="alreadyDoneCount" column="already_done_count" type="integer"/>
+        <field name="takingNotesCount" column="taking_notes_count" type="integer"/>
         <unique-constraints>
             <unique-constraint name="uniq_friday_edition_date_tz" columns="friday_date,timezone"/>
         </unique-constraints>

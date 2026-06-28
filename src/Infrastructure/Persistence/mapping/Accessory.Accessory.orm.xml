@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <!-- Mapping EXTERNE (§30) : l'entité Domaine reste PHP pur, sans attribut Doctrine. -->
+    <entity name="App\Domain\Accessory\Accessory" table="accessory">
+        <id name="id" type="string" length="26">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="code" type="string" length="64"/>
+        <field name="label" type="string" length="128"/>
+        <field name="description" type="text"/>
+        <field name="accessorySlot" column="slot" type="string" length="16" enum-type="App\Domain\Accessory\AccessorySlot"/>
+        <field name="svgGroupId" column="svg_group_id" type="string" length="64"/>
+        <field name="entranceSequence" column="entrance_sequence" type="string" length="64"/>
+        <field name="active" type="boolean"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <unique-constraints>
+            <unique-constraint name="uniq_accessory_code" columns="code"/>
+        </unique-constraints>
+    </entity>
+</doctrine-mapping>

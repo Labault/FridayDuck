@@ -1,0 +1,162 @@
+<svg
+  id="duck-scene"
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 800 800"
+  role="img"
+  aria-labelledby="duck-title duck-description"
+>
+  <title id="duck-title">Le canard du vendredi</title>
+  <desc id="duck-description">
+    Un canard fatigué dont l'énergie augmente grâce aux cafés des visiteurs.
+    Placeholder géométrique pour le prototype Theatre.js (Phase 0).
+  </desc>
+
+  <g id="scene-background"></g>
+
+  <g id="duck-shadow">
+    <ellipse cx="400" cy="688" rx="170" ry="26" fill="#000000" opacity="0.12" />
+  </g>
+
+  <!-- Objets secondaires, masqués par défaut (révélés à des seuils d'énergie). -->
+  <g id="terminal" opacity="0">
+    <rect x="556" y="360" width="196" height="170" rx="10" fill="#0b1622" stroke="#1f3b2e" stroke-width="3" />
+    <rect x="556" y="360" width="196" height="26" rx="10" fill="#13283b" />
+    <text x="572" y="420" font-family="monospace" font-size="20" fill="#36d27a">deploy 16:58 _</text>
+  </g>
+
+  <!-- Halo du pulse global (§18.3) : piloté par le rig, masqué au repos. -->
+  <g id="duck-halo" opacity="0">
+    <circle cx="400" cy="400" r="300" fill="#ffd23f" />
+  </g>
+
+  <g id="duck-root">
+    <g id="duck-body">
+      <ellipse cx="400" cy="510" rx="158" ry="178" fill="#ffd23f" />
+      <ellipse cx="400" cy="540" rx="104" ry="128" fill="#ffe48a" />
+    </g>
+
+    <g id="duck-left-wing">
+      <ellipse cx="266" cy="498" rx="52" ry="118" fill="#f4b400" />
+    </g>
+    <g id="duck-right-wing">
+      <ellipse cx="534" cy="498" rx="52" ry="118" fill="#f4b400" />
+    </g>
+
+    <g id="duck-head">
+      <circle cx="400" cy="300" r="120" fill="#ffd23f" />
+
+      <g id="duck-left-eye">
+        <circle cx="360" cy="282" r="34" fill="#ffffff" stroke="#1c1c1c" stroke-width="3" />
+        <g id="duck-left-pupil">
+          <circle cx="360" cy="288" r="14" fill="#1c1c1c" />
+        </g>
+        <g id="duck-left-eyelid">
+          <rect x="324" y="246" width="72" height="74" rx="22" fill="#ffd23f" />
+        </g>
+      </g>
+
+      <g id="duck-right-eye">
+        <circle cx="440" cy="282" r="34" fill="#ffffff" stroke="#1c1c1c" stroke-width="3" />
+        <g id="duck-right-pupil">
+          <circle cx="440" cy="288" r="14" fill="#1c1c1c" />
+        </g>
+        <g id="duck-right-eyelid">
+          <rect x="404" y="246" width="72" height="74" rx="22" fill="#ffd23f" />
+        </g>
+      </g>
+
+      <g id="duck-beak">
+        <path d="M 330 352 Q 400 332 470 352 Q 452 392 400 392 Q 348 392 330 352 Z" fill="#ff8c00" />
+      </g>
+
+      <!-- Slot TÊTE : accessoires placeholder (§10.5, keyés par svg_group_id, masqués
+          par défaut). Remplacés par le dessin Inkscape réel (mêmes ids). -->
+      <g id="duck-head-accessory-slot">
+        <g class="duck-accessory" id="accessory-cto-glasses">
+          <rect x="320" y="270" width="160" height="26" rx="8" fill="#1c1c1c" />
+          <circle cx="360" cy="283" r="22" fill="#13283b" stroke="#1c1c1c" stroke-width="4" />
+          <circle cx="440" cy="283" r="22" fill="#13283b" stroke="#1c1c1c" stroke-width="4" />
+        </g>
+        <g class="duck-accessory" id="accessory-works-on-my-machine-helmet">
+          <path d="M 300 230 a 100 100 0 0 1 200 0 Z" fill="#ffb03c" stroke="#7a5a3a" stroke-width="4" />
+          <rect x="296" y="228" width="208" height="16" rx="6" fill="#e7b400" />
+        </g>
+        <g class="duck-accessory" id="accessory-kubernetes-beanie">
+          <path d="M 304 232 a 96 96 0 0 1 192 0 Z" fill="#3b6fd2" />
+          <rect x="300" y="226" width="200" height="18" rx="9" fill="#2b4f9e" />
+        </g>
+        <g class="duck-accessory" id="accessory-meeting-noise-cancelling-headset">
+          <path d="M 282 300 a 118 118 0 0 1 236 0" fill="none" stroke="#2b2f36" stroke-width="12" />
+          <rect x="266" y="286" width="34" height="56" rx="12" fill="#2b2f36" />
+          <rect x="500" y="286" width="34" height="56" rx="12" fill="#2b2f36" />
+        </g>
+      </g>
+    </g>
+
+    <!-- Slot CORPS : accessoires placeholder (suivent le corps via #duck-root). -->
+    <g id="duck-body-accessory-slot">
+      <g class="duck-accessory" id="accessory-too-serious-tie">
+        <path d="M 400 392 l 22 24 l -22 96 l -22 -96 Z" fill="#7a1f2b" />
+        <path d="M 380 392 l 20 18 l 20 -18 Z" fill="#a02a39" />
+      </g>
+      <g class="duck-accessory" id="accessory-production-cape">
+        <path d="M 250 430 q 150 80 300 0 l -30 200 q -120 60 -240 0 Z" fill="#7a1f2b" opacity="0.85" />
+      </g>
+      <g class="duck-accessory" id="accessory-senior-since-tuesday-badge">
+        <rect x="330" y="470" width="60" height="44" rx="8" fill="#f5f1e6" stroke="#7a5a3a" stroke-width="3" />
+        <rect x="338" y="480" width="44" height="6" rx="3" fill="#5b626d" />
+        <rect x="338" y="492" width="34" height="6" rx="3" fill="#9aa1ab" />
+      </g>
+      <g class="duck-accessory" id="accessory-oncall-vest">
+        <path d="M 300 430 l 40 -10 l 60 40 l 60 -40 l 40 10 l -10 220 q -90 40 -180 0 Z" fill="#f2a900" opacity="0.9" />
+        <rect x="320" y="470" width="160" height="14" fill="#e7e7e7" opacity="0.8" />
+      </g>
+      <g class="duck-accessory" id="accessory-friday-in-prod-scarf">
+        <path d="M 320 410 q 80 36 160 0 l 8 40 q -88 36 -176 0 Z" fill="#2e6e4f" />
+        <path d="M 460 446 l 26 90 l -28 6 l -18 -86 Z" fill="#235a40" />
+      </g>
+    </g>
+    <!-- Slot MAIN : accessoire placeholder tenu près du corps. -->
+    <g id="duck-hand-accessory-slot">
+      <g class="duck-accessory" id="accessory-tiny-extinguisher">
+        <rect x="250" y="520" width="34" height="80" rx="10" fill="#c0392b" />
+        <rect x="260" y="506" width="14" height="20" rx="4" fill="#1c1c1c" />
+        <rect x="244" y="540" width="46" height="16" rx="4" fill="#e7e7e7" />
+      </g>
+    </g>
+  </g>
+
+  <g id="coffee-cup">
+    <rect x="612" y="296" width="76" height="64" rx="8" fill="#f5f1e6" stroke="#7a5a3a" stroke-width="3" />
+    <path d="M 688 308 q 26 4 26 24 q 0 20 -26 24" fill="none" stroke="#7a5a3a" stroke-width="6" />
+    <ellipse cx="650" cy="300" rx="34" ry="9" fill="#5a3a22" />
+  </g>
+
+  <g id="coffee-steam" opacity="0.05">
+    <path d="M 636 290 q -10 -22 6 -40 q 14 -18 2 -40" fill="none" stroke="#cdbfae" stroke-width="6" stroke-linecap="round" />
+    <path d="M 664 290 q -10 -22 6 -40 q 14 -18 2 -40" fill="none" stroke="#cdbfae" stroke-width="6" stroke-linecap="round" />
+  </g>
+
+  <g id="keyboard" opacity="0">
+    <rect x="296" y="648" width="208" height="58" rx="9" fill="#2b2f36" />
+    <g fill="#5b626d">
+      <rect x="312" y="662" width="26" height="14" rx="3" />
+      <rect x="346" y="662" width="26" height="14" rx="3" />
+      <rect x="380" y="662" width="26" height="14" rx="3" />
+      <rect x="414" y="662" width="26" height="14" rx="3" />
+      <rect x="448" y="662" width="40" height="14" rx="3" />
+      <rect x="330" y="684" width="140" height="14" rx="3" />
+    </g>
+  </g>
+
+  <g id="particles" opacity="0">
+    <circle cx="250" cy="220" r="8" fill="#ff5a3c" />
+    <circle cx="560" cy="200" r="7" fill="#ffb03c" />
+    <circle cx="300" cy="120" r="6" fill="#ff5a3c" />
+    <circle cx="500" cy="140" r="9" fill="#ffb03c" />
+    <circle cx="180" cy="360" r="6" fill="#ff5a3c" />
+    <circle cx="620" cy="360" r="8" fill="#ffb03c" />
+    <circle cx="400" cy="92" r="7" fill="#ff5a3c" />
+    <circle cx="690" cy="250" r="6" fill="#ffb03c" />
+  </g>
+</svg>

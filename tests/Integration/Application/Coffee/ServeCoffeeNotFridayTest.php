@@ -16,6 +16,7 @@ use App\Infrastructure\Persistence\DoctrineAnonymousVisitorRepository;
 use App\Infrastructure\Persistence\DoctrineCoffeeContributionRepository;
 use App\Infrastructure\Persistence\DoctrineFridayEditionRepository;
 use App\Infrastructure\Persistence\DoctrineTransactional;
+use App\Tests\Double\SpyDomainEventPublisher;
 use App\Tests\Integration\DatabaseTestCase;
 use PHPUnit\Framework\Attributes\CoversClass;
 
@@ -30,6 +31,7 @@ final class ServeCoffeeNotFridayTest extends DatabaseTestCase
     {
         // 2026-06-30 est un mardi (le vendredi de référence est le 2026-07-03).
         $tuesday = new FrozenClock(new \DateTimeImmutable('2026-06-30T10:00:00+02:00'));
+        $publisher = new SpyDomainEventPublisher();
 
         $handler = new ServeCoffeeHandler(
             new FridayCalendar($tuesday, 'Europe/Paris'),
@@ -42,6 +44,7 @@ final class ServeCoffeeNotFridayTest extends DatabaseTestCase
                 new UlidIdentifierGenerator(),
                 $tuesday,
             ),
+            $publisher,
         );
 
         $outcome = $handler->handle(hash('sha256', 'A'), 'action-1');
@@ -50,5 +53,7 @@ final class ServeCoffeeNotFridayTest extends DatabaseTestCase
         self::assertNull($outcome->result);
         self::assertSame(0, $this->countRows('coffee_contribution'));
         self::assertSame(0, $this->countRows('friday_edition'));
+        // Invariant A : aucune publication hors vendredi.
+        self::assertSame([], $publisher->calls);
     }
 }

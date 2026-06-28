@@ -29,20 +29,27 @@ final class CurrentFridayEndpointTest extends DatabaseTestCase
 
         $payload = json_decode((string) $first->getContent(), true);
         self::assertIsArray($payload);
-        self::assertSame(
-            [
-                'active' => true,
-                'date' => '2026-07-03',
-                'timezone' => 'Europe/Paris',
-                'status' => 'AWAKE',
-                'energy' => 0,
-                'energyVersion' => 0,
-                'coffeeCount' => 0,
-                'overcaffeinationCount' => 0,
-                'visitor' => ['isNew' => true, 'remainingCoffees' => 3],
-            ],
-            $payload,
-        );
+        self::assertSame('2026-07-03', $payload['date']);
+        self::assertTrue($payload['active']);
+        self::assertSame('AWAKE', $payload['status']);
+        self::assertSame(0, $payload['energy']);
+        self::assertSame(0, $payload['energyVersion']);
+        self::assertSame(0, $payload['coffeeCount']);
+        self::assertSame(['isNew' => true, 'remainingCoffees' => 3, 'hasVoted' => false, 'votedAccessory' => null, 'adviceReaction' => null], $payload['visitor']);
+
+        // Bloc vote (§10) : ouvert, clôture à 14:00, exactement 3 options, pas de gagnant.
+        self::assertIsArray($payload['vote']);
+        self::assertTrue($payload['vote']['open']);
+        self::assertSame('2026-07-03T14:00:00+02:00', $payload['vote']['closesAt']);
+        self::assertNull($payload['vote']['winner']);
+        self::assertSame(0, $payload['vote']['resultsSequence']);
+        self::assertCount(3, $payload['vote']['options']);
+
+        // Bloc conseil (§11) : texte du jour + compteurs de réactions à zéro.
+        self::assertIsArray($payload['advice']);
+        self::assertNotSame('', $payload['advice']['text']);
+        self::assertSame(0, $payload['advice']['adviceSequence']);
+        self::assertSame(['CONCERNING' => 0, 'ALREADY_DONE' => 0, 'TAKING_NOTES' => 0], $payload['advice']['reactions']);
 
         self::assertSame(1, $this->countRows('friday_edition'));
         self::assertSame(1, $this->countRows('anonymous_visitor'));
@@ -59,7 +66,7 @@ final class CurrentFridayEndpointTest extends DatabaseTestCase
 
         $payload2 = json_decode((string) $second->getContent(), true);
         self::assertIsArray($payload2);
-        self::assertSame(['isNew' => false, 'remainingCoffees' => 3], $payload2['visitor']);
+        self::assertSame(['isNew' => false, 'remainingCoffees' => 3, 'hasVoted' => false, 'votedAccessory' => null, 'adviceReaction' => null], $payload2['visitor']);
 
         self::assertSame(1, $this->countRows('friday_edition'));
         self::assertSame(1, $this->countRows('anonymous_visitor'));

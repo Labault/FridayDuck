@@ -47,6 +47,9 @@
             ".php-cs-fixer.dist.php"
         ]
     },
+    "pentatrion/vite-bundle": {
+        "version": "v8.2.4"
+    },
     "phpstan/phpstan": {
         "version": "2.2.2"
     },

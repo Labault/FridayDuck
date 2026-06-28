@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Friday;
 
+use App\Domain\Advice\AdviceReactionType;
+
 /**
  * Édition hebdomadaire PERSISTÉE (§23.1) — agrégat racine de l'état collectif.
  *
@@ -29,6 +31,13 @@ final class FridayEdition
         private int $overcaffeinationCount,
         private \DateTimeImmutable $createdAt,
         private ?\DateTimeImmutable $closedAt,
+        private int $resultsSequence,
+        private ?string $winnerAccessoryCode,
+        private ?string $adviceId,
+        private int $adviceSequence,
+        private int $concerningCount,
+        private int $alreadyDoneCount,
+        private int $takingNotesCount,
     ) {
     }
 
@@ -55,7 +64,137 @@ final class FridayEdition
             overcaffeinationCount: 0,
             createdAt: $now,
             closedAt: null,
+            resultsSequence: 0,
+            winnerAccessoryCode: null,
+            adviceId: null,
+            adviceSequence: 0,
+            concerningCount: 0,
+            alreadyDoneCount: 0,
+            takingNotesCount: 0,
         );
+    }
+
+    /**
+     * Fige le conseil du vendredi (§11.1) — IMMUABLE : un changement de catalogue
+     * en plein vendredi ne déplace pas le conseil du jour. Sous le verrou d'édition.
+     */
+    public function selectAdvice(string $adviceId): void
+    {
+        if (null !== $this->adviceId) {
+            throw new \LogicException('Le conseil du vendredi est déjà figé (§11.1).');
+        }
+
+        $this->adviceId = $adviceId;
+    }
+
+    /**
+     * Première réaction d'un visiteur : incrémente le compteur du type + bumpe la
+     * séquence d'advice (DISTINCTE d'energy_version et de la séquence de vote).
+     * Sous le verrou d'édition (D).
+     */
+    public function recordAdviceReaction(AdviceReactionType $adviceReactionType): void
+    {
+        $this->adjustAdviceReaction($adviceReactionType, 1);
+        ++$this->adviceSequence;
+    }
+
+    /**
+     * Changement de réaction : décrément de l'ancien type, incrément du nouveau —
+     * ATOMIQUE sous le verrou (§11.3, invariants C/D). Compteurs jamais négatifs.
+     */
+    public function changeAdviceReaction(
+        AdviceReactionType $from,
+        AdviceReactionType $to,
+    ): void {
+        $this->adjustAdviceReaction($from, -1);
+        $this->adjustAdviceReaction($to, 1);
+        ++$this->adviceSequence;
+    }
+
+    private function adjustAdviceReaction(AdviceReactionType $adviceReactionType, int $delta): void
+    {
+        $next = max(0, $this->adviceReactionCount($adviceReactionType) + $delta);
+        match ($adviceReactionType) {
+            AdviceReactionType::Concerning => $this->concerningCount = $next,
+            AdviceReactionType::AlreadyDone => $this->alreadyDoneCount = $next,
+            AdviceReactionType::TakingNotes => $this->takingNotesCount = $next,
+        };
+    }
+
+    public function adviceReactionCount(AdviceReactionType $adviceReactionType): int
+    {
+        return match ($adviceReactionType) {
+            AdviceReactionType::Concerning => $this->concerningCount,
+            AdviceReactionType::AlreadyDone => $this->alreadyDoneCount,
+            AdviceReactionType::TakingNotes => $this->takingNotesCount,
+        };
+    }
+
+    public function adviceId(): ?string
+    {
+        return $this->adviceId;
+    }
+
+    public function hasAdvice(): bool
+    {
+        return null !== $this->adviceId;
+    }
+
+    public function adviceSequence(): int
+    {
+        return $this->adviceSequence;
+    }
+
+    public function concerningCount(): int
+    {
+        return $this->concerningCount;
+    }
+
+    public function alreadyDoneCount(): int
+    {
+        return $this->alreadyDoneCount;
+    }
+
+    public function takingNotesCount(): int
+    {
+        return $this->takingNotesCount;
+    }
+
+    /**
+     * Enregistre UN vote accepté : bumpe la séquence de résultats (§24.5), jeton
+     * anti-régression DISTINCT d'`energyVersion`. Sous le verrou d'édition (D).
+     */
+    public function recordAccessoryVote(): void
+    {
+        ++$this->resultsSequence;
+    }
+
+    /**
+     * Fige le gagnant du vote (§10.1) — IMMUABLE : une fois choisi, il ne change
+     * plus. Appelé une seule fois, sous le verrou d'édition (résolution race-safe).
+     */
+    public function selectWinner(string $accessoryCode): void
+    {
+        if (null !== $this->winnerAccessoryCode) {
+            throw new \LogicException('Le gagnant du vote est déjà figé (§10.1).');
+        }
+
+        $this->winnerAccessoryCode = $accessoryCode;
+    }
+
+    public function resultsSequence(): int
+    {
+        return $this->resultsSequence;
+    }
+
+    public function winnerAccessoryCode(): ?string
+    {
+        return $this->winnerAccessoryCode;
+    }
+
+    public function hasWinner(): bool
+    {
+        return null !== $this->winnerAccessoryCode;
     }
 
     /**
@@ -76,6 +215,26 @@ final class FridayEdition
         $this->energy = min(100, intdiv($this->coffeeCount * 100, $this->coffeeTarget));
         $this->overcaffeinationCount = max(0, $this->coffeeCount - $this->coffeeTarget);
         ++$this->energyVersion;
+    }
+
+    /**
+     * Ferme l'édition (samedi minuit, §12.5) — fait progresser le STATUT (un
+     * ENREGISTREMENT, pas une autorité : aucune décision runtime ne le lit, §25.2).
+     * Idempotent.
+     */
+    public function close(\DateTimeImmutable $now): void
+    {
+        if (EditionStatus::Closed === $this->editionStatus) {
+            return;
+        }
+
+        $this->editionStatus = EditionStatus::Closed;
+        $this->closedAt = $now;
+    }
+
+    public function isClosed(): bool
+    {
+        return EditionStatus::Closed === $this->editionStatus;
     }
 
     public function id(): string

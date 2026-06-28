@@ -57,6 +57,20 @@ final readonly class FridayCalendar
         return $this->clock->now()->setTimezone($this->dateTimeZone);
     }
 
+    /**
+     * Vendredi le plus RÉCENT (aujourd'hui si vendredi, sinon le précédent) — pour
+     * les tâches du samedi (clôture, bilan) qui agissent sur le vendredi écoulé.
+     * Opération calendaire (DST-safe), heure murale Europe/Paris.
+     */
+    public function mostRecentFriday(): \DateTimeImmutable
+    {
+        $now = $this->businessNow();
+        $dayOfWeek = (int) $now->format('N');
+        $daysSinceFriday = ($dayOfWeek - self::FRIDAY + 7) % 7; // 0 si vendredi.
+
+        return $now->setTime(0, 0)->modify(\sprintf('-%d days', $daysSinceFriday));
+    }
+
     private function currentOrNextFriday(\DateTimeImmutable $now): \DateTimeImmutable
     {
         $dayOfWeek = (int) $now->format('N');

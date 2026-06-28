@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Domain\Accessory\AccessoryVote" table="accessory_vote">
+        <id name="id" type="string" length="26">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="fridayEditionId" column="friday_edition_id" type="string" length="26"/>
+        <field name="visitorId" column="visitor_id" type="string" length="26"/>
+        <field name="accessoryId" column="accessory_id" type="string" length="26"/>
+        <field name="createdAt" column="created_at" type="datetime_immutable"/>
+        <unique-constraints>
+            <!-- Un seul vote par visiteur et par édition (§23.6, immuable). -->
+            <unique-constraint name="uniq_accessory_vote_edition_visitor" columns="friday_edition_id,visitor_id"/>
+        </unique-constraints>
+    </entity>
+</doctrine-mapping>

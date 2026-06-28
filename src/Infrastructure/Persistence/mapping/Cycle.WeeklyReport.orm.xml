@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Domain\Cycle\WeeklyReport" table="weekly_report">
+        <id name="id" type="string" length="26">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="fridayDate" column="friday_date" type="date_immutable"/>
+        <field name="isoWeek" column="iso_week" type="string" length="16"/>
+        <field name="peakEnergy" column="peak_energy" type="integer"/>
+        <field name="coffeeCount" column="coffee_count" type="integer"/>
+        <field name="overcaffeinationCount" column="overcaffeination_count" type="integer"/>
+        <field name="uniqueVisitors" column="unique_visitors" type="integer"/>
+        <field name="winnerAccessoryCode" column="winner_accessory_code" type="string" length="64" nullable="true"/>
+        <field name="adviceSlug" column="advice_slug" type="string" length="128" nullable="true"/>
+        <field name="concerningCount" column="concerning_count" type="integer"/>
+        <field name="alreadyDoneCount" column="already_done_count" type="integer"/>
+        <field name="takingNotesCount" column="taking_notes_count" type="integer"/>
+        <field name="generatedAt" column="generated_at" type="datetime_immutable"/>
+        <unique-constraints>
+            <unique-constraint name="uniq_weekly_report_iso_week" columns="iso_week"/>
+        </unique-constraints>
+    </entity>
+</doctrine-mapping>

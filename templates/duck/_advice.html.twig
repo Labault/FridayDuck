@@ -1,0 +1,52 @@
+{#
+    Conseil du vendredi (§11) — Phase 5. Vit dans le DOM (§18.5), zéro Theatre.js.
+    État initial par valeurs Twig ; le contrôleur gère réactions live, PUT, copie.
+#}
+{% set advice_reactions = [
+    { code: 'CONCERNING', label: 'Conseil inquiétant', count: friday.advice.concerning },
+    { code: 'ALREADY_DONE', label: 'Déjà fait', count: friday.advice.alreadyDone },
+    { code: 'TAKING_NOTES', label: 'Je prends note', count: friday.advice.takingNotes },
+] %}
+
+<div
+    {{ stimulus_controller('advice-reaction', {
+        text: friday.advice.text,
+        reactions: {
+            CONCERNING: friday.advice.concerning,
+            ALREADY_DONE: friday.advice.alreadyDone,
+            TAKING_NOTES: friday.advice.takingNotes,
+        },
+        adviceReaction: friday.visitorAdviceReaction ?? '',
+        adviceSequence: friday.advice.adviceSequence,
+        reactionUrl: path('api_friday_advice_reaction'),
+        mercureUrl: mercure(mercureTopic),
+    }) }}
+>
+    <div class="advice-card" data-advice-reaction-target="card">
+        <span class="advice-stamp" data-advice-reaction-target="stamp">Conseil officiel</span>
+        <blockquote class="advice-text">{{ friday.advice.text }}</blockquote>
+
+        <div class="advice-reactions">
+            {% for reaction in advice_reactions %}
+                <button
+                    type="button"
+                    class="advice-reaction"
+                    data-advice-reaction-target="button"
+                    data-reaction="{{ reaction.code }}"
+                    data-action="advice-reaction#react"
+                    aria-pressed="false"
+                >
+                    <span class="advice-reaction-label">{{ reaction.label }}</span>
+                    <span class="advice-reaction-count" data-role="count">{{ reaction.count }}</span>
+                </button>
+            {% endfor %}
+        </div>
+
+        <div class="advice-share">
+            <button type="button" class="advice-copy" data-action="advice-reaction#copy">Copier le conseil</button>
+            <span class="hint" role="status" data-advice-reaction-target="copyFeedback"></span>
+        </div>
+
+        <p class="hint" role="status" data-advice-reaction-target="message"></p>
+    </div>
+</div>

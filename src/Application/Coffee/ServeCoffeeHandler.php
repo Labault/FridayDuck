@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Application\Coffee;
 
 use App\Application\Friday\ResolveCurrentFridayEdition;
+use App\Application\RealTime\DomainEventPublisher;
+use App\Application\RealTime\EnergyChanged;
 use App\Application\Visitor\ResolveAnonymousVisitor;
 use App\Domain\Coffee\CoffeeLimitReached;
 use App\Domain\Friday\FridayCalendar;
@@ -24,6 +26,7 @@ final readonly class ServeCoffeeHandler
         private ResolveAnonymousVisitor $resolveAnonymousVisitor,
         private ResolveCurrentFridayEdition $resolveCurrentFridayEdition,
         private ServeCoffee $serveCoffee,
+        private DomainEventPublisher $domainEventPublisher,
     ) {
     }
 
@@ -47,6 +50,17 @@ final readonly class ServeCoffeeHandler
             );
         } catch (CoffeeLimitReached) {
             return CoffeeOutcome::limitReached();
+        }
+
+        // Publication POST-COMMIT (invariant A) : `serve()` a déjà committé en
+        // revenant. On ne diffuse que sur une acceptation RÉELLE — jamais sur un
+        // rejeu idempotent (sinon double-comptage), jamais sur NOT_FRIDAY/quota.
+        // Le port est best-effort : un échec n'annule pas le café (§20.6).
+        if (!$result->replayed) {
+            $this->domainEventPublisher->publish(
+                $fridayState->fridayDate,
+                new EnergyChanged($result->currentEnergy, $result->energyVersion, $clientActionId),
+            );
         }
 
         return CoffeeOutcome::served($result);

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping
+                  https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Domain\Accessory\FridayAccessoryOption" table="friday_accessory_option">
+        <id name="id" type="string" length="26">
+            <generator strategy="NONE"/>
+        </id>
+        <field name="fridayEditionId" column="friday_edition_id" type="string" length="26"/>
+        <field name="accessoryId" column="accessory_id" type="string" length="26"/>
+        <field name="displayOrder" column="display_order" type="integer"/>
+        <field name="voteCount" column="vote_count" type="integer"/>
+        <unique-constraints>
+            <!-- Détection de course à la création des 3 options (résoudre-ou-créer). -->
+            <unique-constraint name="uniq_friday_accessory_option_edition_accessory" columns="friday_edition_id,accessory_id"/>
+            <unique-constraint name="uniq_friday_accessory_option_edition_order" columns="friday_edition_id,display_order"/>
+        </unique-constraints>
+    </entity>
+</doctrine-mapping>

@@ -1,0 +1,4 @@
+pentatrion_vite:
+    # Les assets compilés sont écrits dans public/build (base Vite "/build/").
+    build_directory: build
+    public_directory: public

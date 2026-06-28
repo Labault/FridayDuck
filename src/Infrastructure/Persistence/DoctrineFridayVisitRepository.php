@@ -50,4 +50,12 @@ final class DoctrineFridayVisitRepository extends DoctrineRepository implements 
             ->setParameter('id', $fridayVisit->id())
             ->execute();
     }
+
+    public function countForEdition(string $fridayEditionId): int
+    {
+        return (int) $this->em()
+            ->createQuery('SELECT COUNT(fv.id) FROM '.FridayVisit::class.' fv WHERE fv.fridayEditionId = :edition')
+            ->setParameter('edition', $fridayEditionId)
+            ->getSingleScalarResult();
+    }
 }

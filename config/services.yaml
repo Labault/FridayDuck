@@ -39,6 +39,10 @@ services:
     # Par défaut (prod + repli) : horloge SYSTÈME → APP_FAKE_NOW SANS effet (§7.4).
     App\Domain\Shared\Clock\ClockInterface: '@App\Infrastructure\Clock\SystemClock'
 
+    # Port temps réel (§20, §24.5) → implémentation Mercure. Phase 6 : bascule
+    # outbox en changeant CETTE seule ligne (invariant E).
+    App\Application\RealTime\DomainEventPublisher: '@App\Infrastructure\RealTime\MercureDomainEventPublisher'
+
 # Hors production uniquement, l'horloge devient configurable : la liaison prod
 # reste SystemClock par construction (garde-fou structurel, §7.4).
 when@dev:
@@ -52,3 +56,7 @@ when@preprod:
 when@test:
     services:
         App\Domain\Shared\Clock\ClockInterface: '@App\Infrastructure\Clock\ConfigurableClock'
+        # Pas de publication réseau en test : le port est neutralisé (les tests
+        # dédiés à la publication injectent leur propre espion).
+        App\Tests\Double\NullDomainEventPublisher: ~
+        App\Application\RealTime\DomainEventPublisher: '@App\Tests\Double\NullDomainEventPublisher'

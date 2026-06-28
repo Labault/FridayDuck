@@ -75,6 +75,9 @@ final readonly class ServeCoffeeController
     {
         return new JsonResponse([
             'accepted' => true,
+            // Distingue acceptation réelle d'un rejeu idempotent (les deux en 200,
+            // §8.5) : le front n'anime coffee_receive que sur une vraie acceptation.
+            'replayed' => $coffeeResult->replayed,
             'coffeeContributionId' => $coffeeResult->contributionId,
             'previousEnergy' => $coffeeResult->previousEnergy,
             'currentEnergy' => $coffeeResult->currentEnergy,

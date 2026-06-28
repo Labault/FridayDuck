@@ -1,0 +1,58 @@
+{#
+    Panneau de vote (§10.3) — Phase 4b. État initial par VALEURS TWIG ; le
+    contrôleur Stimulus gère résultats live, décompte, vote et proclamation.
+#}
+{% set vote_options = [] %}
+{% for option in friday.vote.options %}
+    {% set vote_options = vote_options|merge([{
+        code: option.code,
+        label: option.label,
+        displayOrder: option.displayOrder,
+        voteCount: option.voteCount,
+    }]) %}
+{% endfor %}
+
+<div
+    class="vote-panel"
+    {{ stimulus_controller('accessory-vote', {
+        options: vote_options,
+        hasVoted: friday.visitorHasVoted,
+        votedAccessory: friday.votedAccessoryCode ?? '',
+        open: friday.vote.open,
+        closesAt: friday.vote.closesAt,
+        winner: friday.vote.winner ? {
+            code: friday.vote.winner.code,
+            label: friday.vote.winner.label,
+            slot: friday.vote.winner.slot,
+            svgGroupId: friday.vote.winner.svgGroupId,
+        } : {},
+        resultsSequence: friday.vote.resultsSequence,
+        votesUrl: path('api_friday_accessory_votes'),
+        mercureUrl: mercure(mercureTopic),
+    }) }}
+>
+    <h2>Accessoire du vendredi</h2>
+    <p class="hint" data-accessory-vote-target="countdown"></p>
+
+    <ul class="vote-options">
+        {% for option in friday.vote.options %}
+            <li>
+                <button
+                    type="button"
+                    class="vote-option"
+                    data-accessory-vote-target="option"
+                    data-code="{{ option.code }}"
+                    data-action="accessory-vote#vote"
+                    {{ not friday.vote.open or friday.visitorHasVoted ? 'disabled' : '' }}
+                >
+                    <span class="vote-label">{{ option.label }}</span>
+                    <span class="vote-count" data-role="count">{{ option.voteCount }}</span>
+                    <span class="vote-pct" data-role="pct"></span>
+                </button>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <p class="hint" role="status" data-accessory-vote-target="message"></p>
+    <p class="vote-proclamation" role="status" data-accessory-vote-target="proclamation" hidden></p>
+</div>

@@ -19,4 +19,7 @@ interface FridayVisitRepository
      * Met à jour last_seen_at de la visite (instruction SQL atomique).
      */
     public function touch(FridayVisit $fridayVisit, \DateTimeImmutable $now): void;
+
+    /** Nombre de visiteurs UNIQUES d'une édition (§26.4, pour le bilan). */
+    public function countForEdition(string $fridayEditionId): int;
 }
