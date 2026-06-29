@@ -1,0 +1,64 @@
+<svg width="1060" height="380" viewBox="0 0 1060 380" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Real-time flow: a click writes business state and an outbox row in one transaction; a relay publishes to the Mercure hub, which fans out to every browser">
+  <defs>
+    <style>
+      text { font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    </style>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#5b626c"/>
+    </marker>
+  </defs>
+
+  <rect width="1060" height="380" rx="14" fill="#f4f5f7"/>
+  <text x="60" y="50" font-size="26" font-weight="800" fill="#1c2127">Real-time without losing an event</text>
+  <text x="60" y="78" font-size="16" fill="#5b626c">Transactional outbox + a relay → Mercure. Live for everyone, even when the hub blinks.</text>
+
+  <!-- Browser (origin) -->
+  <rect x="40" y="150" width="150" height="80" rx="12" fill="#ffffff" stroke="#cfd4dc" stroke-width="2"/>
+  <text x="115" y="184" font-size="15" font-weight="700" fill="#1c2127" text-anchor="middle">Browser</text>
+  <text x="115" y="206" font-size="14" fill="#8a5a00" text-anchor="middle">click: ☕</text>
+
+  <line x1="190" y1="190" x2="234" y2="190" stroke="#5b626c" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- App transaction -->
+  <rect x="238" y="118" width="246" height="150" rx="12" fill="#fff6e5" stroke="#f0d9a8" stroke-width="2" stroke-dasharray="6 5"/>
+  <text x="361" y="142" font-size="13" font-weight="700" fill="#8a5a00" text-anchor="middle">ONE DB TRANSACTION · atomic</text>
+  <rect x="258" y="158" width="206" height="44" rx="9" fill="#ffffff" stroke="#e7b400" stroke-width="2"/>
+  <text x="361" y="185" font-size="14" fill="#1c2127" text-anchor="middle">energy += contribution</text>
+  <rect x="258" y="210" width="206" height="44" rx="9" fill="#ffffff" stroke="#e7b400" stroke-width="2"/>
+  <text x="361" y="231" font-size="13.5" fill="#1c2127" text-anchor="middle">outbox row + event</text>
+  <text x="361" y="247" font-size="11.5" class="mono" fill="#8a5a00" text-anchor="middle">+ traceparent</text>
+
+  <line x1="484" y1="190" x2="528" y2="190" stroke="#5b626c" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- Relay -->
+  <rect x="532" y="150" width="176" height="80" rx="12" fill="#ffffff" stroke="#cfd4dc" stroke-width="2"/>
+  <text x="620" y="180" font-size="15" font-weight="700" fill="#1c2127" text-anchor="middle">Relay loop</text>
+  <text x="620" y="201" font-size="11.5" class="mono" fill="#8a5a00" text-anchor="middle">FOR UPDATE</text>
+  <text x="620" y="216" font-size="11.5" class="mono" fill="#8a5a00" text-anchor="middle">SKIP LOCKED</text>
+
+  <line x1="708" y1="190" x2="752" y2="190" stroke="#5b626c" stroke-width="2.5" marker-end="url(#a)"/>
+
+  <!-- Mercure hub -->
+  <rect x="756" y="150" width="150" height="80" rx="12" fill="#fff1c2" stroke="#e7b400" stroke-width="2.5"/>
+  <text x="831" y="184" font-size="15" font-weight="700" fill="#1c2127" text-anchor="middle">Mercure hub</text>
+  <text x="831" y="206" font-size="13" fill="#8a5a00" text-anchor="middle">(in Caddy)</text>
+
+  <!-- fan-out browsers -->
+  <g>
+    <rect x="946" y="120" width="96" height="42" rx="9" fill="#ffffff" stroke="#cfd4dc" stroke-width="2"/>
+    <text x="994" y="146" font-size="13" fill="#1c2127" text-anchor="middle">tab A</text>
+    <rect x="946" y="169" width="96" height="42" rx="9" fill="#ffffff" stroke="#cfd4dc" stroke-width="2"/>
+    <text x="994" y="195" font-size="13" fill="#1c2127" text-anchor="middle">tab B</text>
+    <rect x="946" y="218" width="96" height="42" rx="9" fill="#ffffff" stroke="#cfd4dc" stroke-width="2"/>
+    <text x="994" y="244" font-size="13" fill="#1c2127" text-anchor="middle">tab C</text>
+  </g>
+  <line x1="906" y1="186" x2="942" y2="143" stroke="#5b626c" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="906" y1="190" x2="942" y2="190" stroke="#5b626c" stroke-width="2" marker-end="url(#a)"/>
+  <line x1="906" y1="194" x2="942" y2="237" stroke="#5b626c" stroke-width="2" marker-end="url(#a)"/>
+  <text x="924" y="284" font-size="12" fill="#5b626c" text-anchor="middle">SSE</text>
+
+  <!-- caption -->
+  <text x="60" y="328" font-size="14" fill="#2a2f37">Business state and the event commit <tspan font-weight="700">together</tspan>. If Mercure is down, rows wait in the outbox and publish on recovery.</text>
+  <text x="60" y="350" font-size="14" fill="#2a2f37">At-least-once, ordered, race-safe; the front dedupes by action key and a monotonic version barrier.</text>
+</svg>

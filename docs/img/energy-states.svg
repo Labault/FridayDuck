@@ -1,0 +1,42 @@
+<svg width="1000" height="290" viewBox="0 0 1000 290" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The energy gauge: one shared number from 0 to 100 across six duck states">
+  <defs>
+    <style>text { font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }</style>
+    <clipPath id="bar"><rect x="60" y="118" width="880" height="40" rx="20"/></clipPath>
+  </defs>
+
+  <rect width="1000" height="290" rx="14" fill="#f4f5f7"/>
+
+  <text x="60" y="52" font-size="26" font-weight="800" fill="#1c2127">The energy gauge</text>
+  <text x="60" y="82" font-size="16" fill="#5b626c">One shared number, 0 → 100. Every coffee nudges it. The server owns it; no browser decides.</text>
+
+  <text x="60" y="110" font-size="13" font-weight="700" fill="#8a5a00">0</text>
+  <text x="940" y="110" font-size="13" font-weight="700" fill="#b3261e" text-anchor="end">100</text>
+
+  <!-- segments -->
+  <g clip-path="url(#bar)">
+    <rect x="60.0"  y="118" width="146.7" height="40" fill="#c7ccd3"/>
+    <rect x="206.7" y="118" width="146.7" height="40" fill="#ffe39a"/>
+    <rect x="353.3" y="118" width="146.7" height="40" fill="#ffd23f"/>
+    <rect x="500.0" y="118" width="146.7" height="40" fill="#f2b705"/>
+    <rect x="646.7" y="118" width="146.7" height="40" fill="#ef8b2c"/>
+    <rect x="793.3" y="118" width="146.7" height="40" fill="#b3261e"/>
+    <line x1="206.7" y1="118" x2="206.7" y2="158" stroke="#f4f5f7" stroke-width="2"/>
+    <line x1="353.3" y1="118" x2="353.3" y2="158" stroke="#f4f5f7" stroke-width="2"/>
+    <line x1="500.0" y1="118" x2="500.0" y2="158" stroke="#ffffff" stroke-width="2" opacity="0.6"/>
+    <line x1="646.7" y1="118" x2="646.7" y2="158" stroke="#ffffff" stroke-width="2" opacity="0.6"/>
+    <line x1="793.3" y1="118" x2="793.3" y2="158" stroke="#ffffff" stroke-width="2" opacity="0.6"/>
+  </g>
+  <rect x="60" y="118" width="880" height="40" rx="20" fill="none" stroke="#cfd4dc" stroke-width="2"/>
+
+  <!-- labels -->
+  <g font-size="12.5" fill="#2a2f37" text-anchor="middle">
+    <text x="133.3"><tspan x="133.3" y="182">COMATOSE</tspan></text>
+    <text x="280.0"><tspan x="280.0" y="182">PHYSICALLY</tspan><tspan x="280.0" y="197">PRESENT</tspan></text>
+    <text x="426.7"><tspan x="426.7" y="182">BARELY</tspan><tspan x="426.7" y="197">FUNCTIONAL</tspan></text>
+    <text x="573.3"><tspan x="573.3" y="182">PERFORMING</tspan><tspan x="573.3" y="197">PRODUCTIVITY</tspan></text>
+    <text x="720.0"><tspan x="720.0" y="182">OVER-</tspan><tspan x="720.0" y="197">MOTIVATED</tspan></text>
+    <text x="866.7" fill="#b3261e" font-weight="700"><tspan x="866.7" y="182">CAFFEINE</tspan><tspan x="866.7" y="197">INCIDENT</tspan></text>
+  </g>
+
+  <text x="60" y="256" font-size="14" font-style="italic" fill="#5b626c">Cross the top and the duck has a caffeine incident. As one does.</text>
+</svg>

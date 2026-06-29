@@ -1,0 +1,37 @@
+<svg width="1000" height="470" viewBox="0 0 1000 470" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Layered architecture: a pure Domain core, wrapped by Application, wrapped by Infrastructure and Presentation; dependencies point inward">
+  <defs>
+    <style>text { font-family: 'Segoe UI', system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif; }</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#8a5a00"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="470" rx="14" fill="#f4f5f7"/>
+  <text x="60" y="50" font-size="26" font-weight="800" fill="#1c2127">Architecture: a pure core, adapters on the outside</text>
+
+  <!-- outer ring: infrastructure + presentation -->
+  <rect x="70" y="80" width="860" height="310" rx="18" fill="#ffffff" stroke="#cfd4dc" stroke-width="2"/>
+  <text x="92" y="108" font-size="14" font-weight="700" letter-spacing="1.5" fill="#5b626c">INFRASTRUCTURE &amp; PRESENTATION, adapters &amp; entry points</text>
+  <text x="92" y="130" font-size="13.5" fill="#6a7280">Doctrine · Mercure · Messenger · Clock · OpenTelemetry  ·  HTTP · Console</text>
+
+  <!-- middle ring: application -->
+  <rect x="200" y="150" width="600" height="180" rx="16" fill="#fff6e5" stroke="#f0d9a8" stroke-width="2"/>
+  <text x="222" y="178" font-size="14" font-weight="700" letter-spacing="1.5" fill="#8a5a00">APPLICATION, use cases</text>
+  <text x="222" y="200" font-size="13.5" fill="#9a7b3c">commands · queries · handlers · views</text>
+
+  <!-- core: domain -->
+  <rect x="330" y="212" width="340" height="106" rx="14" fill="#fff1c2" stroke="#e7b400" stroke-width="2.5"/>
+  <text x="500" y="252" font-size="20" font-weight="800" fill="#1c2127" text-anchor="middle">DOMAIN</text>
+  <text x="500" y="278" font-size="13.5" fill="#8a5a00" text-anchor="middle">pure PHP · entities · value objects · ports</text>
+  <text x="500" y="298" font-size="12.5" font-style="italic" fill="#9a7b3c" text-anchor="middle">no Symfony, no Doctrine, no clock of its own</text>
+
+  <!-- inward arrows -->
+  <line x1="500" y1="150" x2="500" y2="208" stroke="#8a5a00" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="200" y1="240" x2="326" y2="262" stroke="#8a5a00" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <line x1="800" y1="240" x2="674" y2="262" stroke="#8a5a00" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <text x="500" y="142" font-size="12.5" font-weight="700" fill="#8a5a00" text-anchor="middle">dependencies point inward</text>
+
+  <!-- rule note -->
+  <text x="60" y="424" font-size="14" fill="#2a2f37"><tspan font-weight="700">Rule:</tspan> the Domain imports nothing from the framework. Time enters through <tspan font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#8a5a00">ClockInterface</tspan>, never <tspan font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#8a5a00">new \DateTimeImmutable()</tspan>.</text>
+  <text x="60" y="448" font-size="14" fill="#2a2f37">Enforced by PHPStan level 9 and PHP-CS-Fixer on every commit.</text>
+</svg>

@@ -2794,10 +2794,7 @@ Kubernetes peut constituer un exercice final indépendant. Il ne doit pas deveni
 
 - `README.md` ;
 - `CONTRIBUTING.md` ;
-- `docs/product.md` ;
 - `docs/architecture.md` ;
-- `docs/animation-system.md` ;
-- `docs/svg-conventions.md` ;
 - `docs/observability.md` ;
 - `docs/deployment.md` ;
 - `docs/runbook.md` ;
