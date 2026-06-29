@@ -1,0 +1,18 @@
+# Datasources Grafana PROD — Prometheus (métriques) + Tempo (traces). SANS Loki :
+# pas de logs centralisés en prod (ils restent sur stderr → journald). Donc pas de
+# tracesToLogsV2 ni de derivedFields (qui référençaient Loki dans le stack local).
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200

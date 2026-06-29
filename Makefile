@@ -16,7 +16,7 @@
 	up down build rebuild restart start reset sh logs ps \
 	console cc migrate migration db worker relay \
 	e2e-up e2e-down e2e e2e-all \
-	obs-up obs-down \
+	obs-up obs-down obs-prod-up obs-prod-down \
 	deploy smoke prod-up prod-down prod-ps prod-logs prod-sh prod-config \
 	backup-install backup-now backup-restore-test
 
@@ -24,15 +24,17 @@
 # Surcharge : `make up DC="docker-compose"`.
 DC ?= docker compose
 
-COMPOSE_E2E  ?= compose.e2e.yaml
-COMPOSE_OBS  ?= compose.observability.yaml
-COMPOSE_PROD ?= compose.prod.yaml
-PROD_ENV     ?= .env.prod.local
+COMPOSE_E2E      ?= compose.e2e.yaml
+COMPOSE_OBS      ?= compose.observability.yaml
+COMPOSE_OBS_PROD ?= compose.observability.prod.yaml
+COMPOSE_PROD     ?= compose.prod.yaml
+PROD_ENV         ?= .env.prod.local
 
 # Raccourcis Compose par stack (dev = compose.yaml, auto-chargé, donc $(DC) nu).
-DCE = $(DC) -f $(COMPOSE_E2E)
-DCO = $(DC) -f $(COMPOSE_OBS)
-DCP = $(DC) --env-file $(PROD_ENV) -f $(COMPOSE_PROD)
+DCE  = $(DC) -f $(COMPOSE_E2E)
+DCO  = $(DC) -f $(COMPOSE_OBS)
+DCOP = $(DC) -f $(COMPOSE_OBS_PROD)
+DCP  = $(DC) --env-file $(PROD_ENV) -f $(COMPOSE_PROD)
 
 # Silence le E_USER_WARNING d'auto-instrumentation OpenTelemetry quand l'extension
 # PECL `opentelemetry` est ABSENTE (hôte de dev + CI ; le warning sort à l'autoload
@@ -155,6 +157,12 @@ obs-up: ## Démarre le stack d'observabilité (Collector + Grafana + Prometheus�
 
 obs-down: ## Arrête le stack d'observabilité
 	$(DCO) down --remove-orphans
+
+obs-prod-up: ## Démarre le stack d'obs PROD (sur le VPS — réseau `observability` requis)
+	$(DCOP) up -d --wait
+
+obs-prod-down: ## Arrête le stack d'obs prod (conserve les volumes : TSDB, Tempo, Grafana)
+	$(DCOP) down --remove-orphans
 
 ##@ Production (compose.prod.yaml + .env.prod.local — sur le VPS / répétition)
 

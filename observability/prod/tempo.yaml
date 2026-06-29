@@ -1,0 +1,27 @@
+# Tempo PROD (§21) — stockage local des traces, réception OTLP. Ajoute un compactor
+# pour une rétention COURTE (traces plus lourdes que les métriques) : 14 jours.
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+
+ingester:
+  max_block_duration: 5m
+
+compactor:
+  compaction:
+    # Rétention des blocs de traces : 336h = 14 j (passer à 168h pour 7 j).
+    block_retention: 336h
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /var/tempo/blocks
+    wal:
+      path: /var/tempo/wal

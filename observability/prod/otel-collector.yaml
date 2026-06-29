@@ -1,0 +1,93 @@
+# OTel Collector PROD (§21). Reprend le local (OTLP → Tempo + Prometheus) et ajoute
+# la collecte des métriques HÔTE (hostmetrics) et CONTENEURS (docker_stats) pour
+# alimenter les alertes infra. PAS de pipeline logs : pas de Loki en prod.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # Métriques HÔTE (Collector-centric, sans node_exporter). Lit / monté en /hostfs.
+  hostmetrics:
+    collection_interval: 30s
+    root_path: /hostfs
+    scrapers:
+      cpu: {}
+      load: {}
+      memory: {}
+      filesystem:
+        exclude_fs_types:
+          match_type: strict
+          fs_types:
+            - autofs
+            - binfmt_misc
+            - cgroup
+            - cgroup2
+            - configfs
+            - debugfs
+            - devpts
+            - devtmpfs
+            - fusectl
+            - hugetlbfs
+            - mqueue
+            - overlay
+            - proc
+            - procfs
+            - pstore
+            - securityfs
+            - sysfs
+            - tracefs
+
+  # Métriques CONTENEURS (sans cAdvisor). `container.uptime` sert le restart-loop :
+  # un conteneur qui flappe ne dépasse jamais quelques secondes d'uptime.
+  docker_stats:
+    endpoint: unix:///var/run/docker.sock
+    collection_interval: 30s
+    metrics:
+      container.uptime:
+        enabled: true
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  # Attache host.name aux métriques hôte (utile pour le filtrage Grafana).
+  resourcedetection/system:
+    detectors: [system]
+    system:
+      hostname_sources: [os]
+  batch:
+    timeout: 5s
+
+exporters:
+  # Traces → Tempo (OTLP gRPC, réseau obs-internal).
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  # Métriques → exposées en /metrics, scrapées par Prometheus (pull). Noms OTel
+  # conservés (points → underscores), sans double suffixe `_total`.
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    add_metric_suffixes: false
+    resource_to_telemetry_conversion:
+      enabled: true
+
+service:
+  telemetry:
+    logs:
+      level: info
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo]
+    metrics:
+      receivers: [otlp, hostmetrics, docker_stats]
+      processors: [memory_limiter, resourcedetection/system, batch]
+      exporters: [prometheus]
+    # PAS de pipeline logs : pas de Loki en prod. Les logs OTLP éventuellement reçus
+    # de l'app ne sont routés nulle part (l'app les a aussi sur stderr → journald).

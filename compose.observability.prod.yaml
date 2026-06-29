@@ -1,0 +1,136 @@
+# Stack d'observabilité PRODUCTION (Phase 9, §21/§26) — SÉPARÉ de l'app, long-lived.
+#
+# Promotion du stack PROUVÉ EN LOCAL (compose.observability.yaml) vers le VPS. On ne
+# réinvente rien : mêmes images, mêmes pipelines ; on ajoute la rétention 30 j, les
+# métriques hôte/conteneurs (hostmetrics + docker_stats), le pont ntfy et le
+# durcissement d'accès (Grafana sur 127.0.0.1, le reste sans port hôte).
+#
+# INDÉPENDANT de push-to-deploy : `deploy.sh` ne lance QUE compose.prod.yaml. Ce
+# stack se met en service / à jour À LA MAIN (`make obs-prod-up`) et SURVIT aux
+# `git reset --hard` du déploiement (ses conteneurs ne sont pas recréés tant qu'on
+# ne relance pas CE compose). Même patron que proxy-global et les backups.
+#
+# ACCÈS : tunnel SSH uniquement. SEUL Grafana publie un port, sur 127.0.0.1:3000.
+# Les 5 autres services n'ont AUCUN port hôte : joignables seulement à l'intérieur
+# du réseau Docker `obs-internal`. Surface internet = ZÉRO.
+#
+#   docker network create observability          # une seule fois (réseau partagé)
+#   make obs-prod-up                              # = docker compose -f ce-fichier up -d
+#   ssh -L 3000:localhost:3000 vps                # puis http://localhost:3000
+#
+# Secrets : observability/prod/obs.env (mdp Grafana) et ntfy-alertmanager.scfg
+# (topic + token ntfy), tous deux root-only (chmod 600) et gitignorés.
+name: friday-duck-obs-prod
+
+services:
+  # Reçoit l'OTLP de l'app (sur `observability`), ventile : traces → Tempo,
+  # métriques → exporter Prometheus (scrapé). Collecte AUSSI les métriques hôte
+  # (hostmetrics) et conteneurs (docker_stats) — d'où le montage de / et du socket.
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.123.0
+    container_name: obs_otel_collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    # root : lecture du socket Docker (docker_stats) et de / monté en /hostfs
+    # (hostmetrics). À valider selon les droits du socket sur le VPS.
+    user: "0:0"
+    volumes:
+      - ./observability/prod/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+      - /:/hostfs:ro,rslave
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    mem_limit: 300m
+    networks: [obs-internal, observability]
+    depends_on: [tempo]
+
+  tempo:
+    image: grafana/tempo:2.7.1
+    container_name: obs_tempo
+    restart: unless-stopped
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/prod/tempo.yaml:/etc/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    mem_limit: 400m
+    networks: [obs-internal]
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: obs_prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"   # rétention 30 j (exigence).
+    volumes:
+      - ./observability/prod/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prod/prometheus-rules.infra.yml:/etc/prometheus/rules.infra.yml:ro
+      - prometheus_data:/prometheus
+    mem_limit: 512m
+    networks: [obs-internal]
+    depends_on: [alertmanager]
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.0
+    container_name: obs_alertmanager
+    restart: unless-stopped
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml"]
+    volumes:
+      - ./observability/prod/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    mem_limit: 128m
+    networks: [obs-internal]
+    depends_on: [ntfy-alertmanager]
+
+  # Pont Alertmanager → ntfy (Alertmanager ne parle que webhook). Convergé avec les
+  # backups : MÊME topic ntfy (les backups y arrivent via leur intégration
+  # healthchecks.io → ntfy). Config scfg root-only (topic + token d'écriture).
+  ntfy-alertmanager:
+    # ⚠️ Docker Hub : xenrox/ntfy-alertmanager. Tag ÉPINGLÉ (jamais `latest`).
+    # Vérifier que le tag existe au pull (les releases git sont taguées vX.Y.Z).
+    image: xenrox/ntfy-alertmanager:v0.4.0
+    container_name: obs_ntfy_alertmanager
+    restart: unless-stopped
+    command: ["--config", "/etc/ntfy-alertmanager/config"]
+    volumes:
+      - ./observability/prod/ntfy-alertmanager.scfg:/etc/ntfy-alertmanager/config:ro
+    mem_limit: 64m
+    networks: [obs-internal]
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: obs_grafana
+    restart: unless-stopped
+    env_file:
+      - ./observability/prod/obs.env   # root-only : GF_SECURITY_ADMIN_PASSWORD.
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      # Fini l'anonyme-Admin du local : authentification par mot de passe.
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      # Datasources SANS Loki (prod = traces + métriques) ; dashboards RÉUTILISÉS
+      # du stack local (aucun panel Loki — Métier=Prometheus, Technique=+Tempo).
+      - ./observability/prod/grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    mem_limit: 256m
+    ports:
+      # SEUL port publié de tout le stack. Loopback only → accès par tunnel SSH.
+      - "127.0.0.1:3000:3000"
+    networks: [obs-internal]
+    depends_on: [prometheus, tempo]
+
+volumes:
+  tempo_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  # Réseau privé des backends d'obs. L'app n'y est PAS : elle ne peut joindre que
+  # le Collector (via `observability`), pas Prometheus/Alertmanager/Grafana/le pont.
+  obs-internal:
+    driver: bridge
+  # Réseau partagé d'ingestion. DOIT préexister : `docker network create observability`
+  # (comme `web`). compose.prod.yaml y rattache app/worker/relay pour émettre l'OTLP.
+  observability:
+    external: true
+    name: observability
