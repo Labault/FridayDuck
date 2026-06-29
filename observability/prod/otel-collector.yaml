@@ -44,6 +44,9 @@ receivers:
   # un conteneur qui flappe ne dépasse jamais quelques secondes d'uptime.
   docker_stats:
     endpoint: unix:///var/run/docker.sock
+    # Le receiver tape l'API Docker en 1.25 par défaut ; les démons récents
+    # (VPS) refusent tout < 1.40. On épingle la version minimale acceptée.
+    api_version: "1.40"
     collection_interval: 30s
     metrics:
       container.uptime:
