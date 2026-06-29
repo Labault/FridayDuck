@@ -105,6 +105,7 @@ services:
     networks:
       - web
       - internal
+      - observability
     # ── Durcissement runtime (Phase 9) : non-root + FS racine en lecture seule ──
     # L'image tourne déjà en www-data (cf. Dockerfile). Ici on verrouille le FS.
     <<: *hardening
@@ -160,6 +161,7 @@ services:
       - "-v"
     networks:
       - internal
+      - observability
     # Durcissement : worker non-root + FS racine en lecture seule. Pas de serveur
     # web ici (ni Caddy, ni bind de port) → ni sysctl, ni tmpfs /data /config. Seuls
     # /tmp et var/share (pool cache.app du Scheduler) sont écrits au runtime.
@@ -189,6 +191,7 @@ services:
     command: ["while true; do php bin/console app:outbox:relay >/dev/null 2>&1 || true; sleep 1; done"]
     networks:
       - internal
+      - observability
     # Durcissement : relay non-root + FS racine en lecture seule. Comme le worker,
     # aucun serveur web → ni sysctl, ni tmpfs /data /config ; /tmp + var/share suffisent.
     <<: *hardening
@@ -233,3 +236,11 @@ networks:
   # Réseau privé app ↔ db ↔ worker ↔ relay (publication Mercure interne incluse).
   internal:
     driver: bridge
+  # Réseau partagé du stack d'observabilité (compose.observability.prod.yaml). DOIT
+  # préexister : `docker network create observability` (comme `web`). app/worker/relay
+  # y joignent UNIQUEMENT le Collector (otel-collector:4318) pour émettre l'OTLP ;
+  # ils ne voient ni Prometheus, ni Grafana, ni Alertmanager (absents de ce réseau).
+  # Export non bloquant (garantie 7a) : stack d'obs down ⇒ l'app boote quand même.
+  observability:
+    external: true
+    name: observability
