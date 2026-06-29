@@ -1,0 +1,25 @@
+# Le Canard du Vendredi — config du pont Alertmanager → ntfy (Phase 9).
+#
+# Format : scfg (https://hub.xenrox.net/~xenrox/ntfy-alertmanager/). Modèle du
+# fichier RÉEL `ntfy-alertmanager.scfg`, root-only (chmod 600), JAMAIS committé
+# (gitignoré). Pendant du backup.env / .env.prod.local : le pont a ses secrets.
+#
+# Sur le VPS :
+#   cp observability/prod/ntfy-alertmanager.scfg.dist observability/prod/ntfy-alertmanager.scfg
+#   chmod 600 observability/prod/ntfy-alertmanager.scfg   # puis renseigner topic + token
+
+# Le pont écoute le webhook Alertmanager sur ce port (interne à obs-internal).
+http-address :8080
+
+# Une notification ntfy par alerte (plutôt que groupée). Lisible sur téléphone.
+alert-mode single
+
+ntfy {
+  # [PUBLIC mais à garder discret] MÊME topic que les backups (convergence : une
+  # seule boîte « le VPS a un souci »). Choisir un nom non devinable.
+  topic https://ntfy.sh/REMPLACE_PAR_TON_TOPIC_SECRET
+
+  # [SECRET] Jeton d'écriture ntfy si le topic est protégé (recommandé : empêche
+  # n'importe qui de publier sur ton topic). Créer sur ntfy.sh → Account → Tokens.
+  access-token CHANGE_ME
+}

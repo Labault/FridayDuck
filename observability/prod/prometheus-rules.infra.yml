@@ -1,0 +1,86 @@
+# Règles d'alerte INFRA UNIQUEMENT (Phase 9) — disque, mémoire hôte, restart-loop.
+#
+# AUCUNE règle « app down » / « pas de trafic » : le canard dort du lundi au jeudi
+# PAR CONCEPT (§7.2). Un compteur à zéro est le produit, pas un incident — alerter
+# là-dessus reviendrait à se réveiller pour s'annoncer que le canard dort. Les
+# règles MÉTIER du local (observability/prometheus-rules.yml) sont VOLONTAIREMENT
+# non reprises ici ; elles restent disponibles si on veut un jour les promouvoir,
+# mais dormance-aware (ce n'est pas l'objet de cette phase).
+#
+# Métriques : noms issus de l'exporter Prometheus du Collector (OTel, points →
+# underscores) — hostmetrics (system_*) et docker_stats (container_*).
+groups:
+  - name: infra-disk
+    rules:
+      - alert: HostDiskFillingUp
+        expr: |
+          100 * sum by (mountpoint) (system_filesystem_usage{state="used"})
+            / clamp_min(sum by (mountpoint) (system_filesystem_usage), 1) > 80
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Disque {{ $labels.mountpoint }} > 80%"
+          description: "{{ $labels.mountpoint }} à {{ printf \"%.0f\" $value }}% sur le VPS."
+          runbook: "docs/runbook-observability.md#disque-qui-se-remplit"
+
+      - alert: HostDiskCritical
+        expr: |
+          100 * sum by (mountpoint) (system_filesystem_usage{state="used"})
+            / clamp_min(sum by (mountpoint) (system_filesystem_usage), 1) > 90
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "Disque {{ $labels.mountpoint }} > 90% (CRITIQUE)"
+          description: "Saturation imminente sur {{ $labels.mountpoint }} — libérer de l'espace."
+          runbook: "docs/runbook-observability.md#disque-qui-se-remplit"
+
+  - name: infra-memory
+    rules:
+      - alert: HostMemoryHigh
+        expr: |
+          100 * sum(system_memory_usage{state="used"})
+            / clamp_min(sum(system_memory_usage), 1) > 85
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "Mémoire hôte > 85% (15 min)"
+          description: "Mémoire utilisée à {{ printf \"%.0f\" $value }}% sur le VPS."
+          runbook: "docs/runbook-observability.md#memoire-haute"
+
+      - alert: HostMemoryCritical
+        expr: |
+          100 * sum(system_memory_usage{state="used"})
+            / clamp_min(sum(system_memory_usage), 1) > 92
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "Mémoire hôte > 92% (CRITIQUE)"
+          description: "Pression mémoire critique — risque d'OOM-kill."
+          runbook: "docs/runbook-observability.md#memoire-haute"
+
+  - name: infra-containers
+    rules:
+      # Restart-loop : un conteneur qui n'est JAMAIS resté en vie 5 min sur les 15
+      # dernières. Le worker se recycle toutes les heures par design
+      # (--time-limit=3600) → son uptime atteint ~3600 s → JAMAIS faux positif ici.
+      - alert: ContainerRestartLoop
+        expr: max_over_time(container_uptime[15m]) < 300
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "Conteneur {{ $labels.container_name }} en restart-loop"
+          description: "Jamais vivant 5 min sur les 15 dernières minutes — crash-loop probable."
+          runbook: "docs/runbook-observability.md#restart-loop-conteneur"
+
+  - name: infra-monitoring-self
+    rules:
+      # Infra DU MONITORING (pas l'app) : Prometheus ne scrape plus le Collector →
+      # les autres alertes infra sont aveugles tant que ça dure.
+      - alert: CollectorScrapeDown
+        expr: up{job="otel-collector"} == 0
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "Prometheus ne scrape plus le Collector (surveillance aveugle)"
+          description: "L'exporter de métriques du Collector est injoignable."
+          runbook: "docs/runbook-observability.md#collector-injoignable"
