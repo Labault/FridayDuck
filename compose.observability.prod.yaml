@@ -84,9 +84,9 @@ services:
   # backups : MÊME topic ntfy (les backups y arrivent via leur intégration
   # healthchecks.io → ntfy). Config scfg root-only (topic + token d'écriture).
   ntfy-alertmanager:
-    # ⚠️ Docker Hub : xenrox/ntfy-alertmanager. Tag ÉPINGLÉ (jamais `latest`).
-    # Vérifier que le tag existe au pull (les releases git sont taguées vX.Y.Z).
-    image: xenrox/ntfy-alertmanager:v0.4.0
+    # Docker Hub : xenrox/ntfy-alertmanager. Tag ÉPINGLÉ (jamais `latest`). Les tags
+    # publiés sont SANS préfixe `v` (1.0.0, 0.5.0, …) ; 1.0.0 = stable courante.
+    image: xenrox/ntfy-alertmanager:1.0.0
     container_name: obs_ntfy_alertmanager
     restart: unless-stopped
     command: ["--config", "/etc/ntfy-alertmanager/config"]
