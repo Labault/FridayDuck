@@ -117,11 +117,11 @@ COPY --link composer.* symfony.* ./
 # fallback source est désactivé. Cinq tentatives espacées suffisent à franchir
 # une mauvaise fenêtre et fiabilisent le build (donc le push-to-deploy).
 RUN for i in 1 2 3 4 5; do \
-      composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scripts --no-progress && exit 0; \
-      echo "composer install : échec, nouvelle tentative ${i}/5…" >&2; \
-      sleep 5; \
-    done; \
-    echo "composer install : échec après 5 tentatives — abandon." >&2; exit 1
+		composer install --no-cache --prefer-dist --no-dev --no-autoloader --no-scripts --no-progress && exit 0; \
+		echo "composer install : échec, nouvelle tentative ${i}/5…" >&2; \
+		sleep 5; \
+	done; \
+	echo "composer install : échec après 5 tentatives — abandon." >&2; exit 1
 
 COPY --link . ./
 # Assets compilés depuis le stage Node (entrypoints.json lu par pentatrion/vite-bundle).
