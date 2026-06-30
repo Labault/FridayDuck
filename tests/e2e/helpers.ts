@@ -1,6 +1,6 @@
 import { type Page, expect } from '@playwright/test';
 
-// Sélecteurs RÉELS du DOM /duck (data-*-target des contrôleurs Stimulus).
+// Sélecteurs RÉELS du DOM de la page du canard (data-*-target des contrôleurs Stimulus).
 export const sel = {
   coffeeButton: '[data-duck-target="coffeeButton"]',
   energyValue: '[data-duck-target="energyValue"]',
@@ -18,9 +18,9 @@ export const sel = {
   adviceCount: (code: string) => `.advice-reaction[data-reaction="${code}"] [data-role="count"]`,
 };
 
-/** Ouvre /duck et attend que le contrôleur ait amorcé le readout. */
+/** Ouvre la page du canard (route `duck_demo`, servie à la racine) et attend que le contrôleur ait amorcé le readout. */
 export async function openDuck(page: Page): Promise<void> {
-  await page.goto('/duck');
+  await page.goto('/');
   await expect(page.locator(sel.energyValue)).toBeVisible();
 }
 
