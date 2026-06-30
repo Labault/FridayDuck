@@ -40,6 +40,21 @@ x-app-base: &app-base
     timeout: 5s
     retries: 20
     start_period: 30s
+  # L'image est bâtie en `prod` (target frankenphp_prod) et tourne non-root
+  # (www-data, §Phase 9). Trois chemins root:root que www-data doit écrire au
+  # runtime ne sont pas couverts par l'image et n'ont PAS de read_only à contourner
+  # ici (contrairement à compose.prod.yaml) — il faut juste les rendre inscriptibles :
+  #   var/cache — on tourne en `preprod` : le kernel crée `var/cache/preprod` AU BOOT
+  #               (« Unable to create the cache directory » sinon). Aucun cache baké
+  #               à masquer, `preprod` ignore le `var/cache/prod` de l'image.
+  #   /data /config — la base bolt du hub Mercure embarqué (Caddy) y est écrite
+  #               (« open /data/caddy/mercure.db: permission denied » sinon).
+  # mode=1777 : les points de montage préexistent en root:root, le tmpfs en hérite
+  # (même mécanisme que les tmpfs de compose.prod.yaml).
+  tmpfs:
+    - /app/var/cache:mode=1777
+    - /data:mode=1777
+    - /config:mode=1777
   restart: unless-stopped
 
 services:
