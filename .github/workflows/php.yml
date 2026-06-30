@@ -10,10 +10,16 @@ permissions:
 jobs:
   # Pipeline backend (§31.1) : composer validate → install → formatage →
   # PHPStan → tests unitaires → tests d'intégration → audit → migrations de test.
-  # PHP 8.5 : ALIGNÉ sur l'image FrankenPHP et l'environnement de dev (no drift).
+  # Matrice PHP : 8.4 (plancher annoncé, composer require.php) + 8.5 (image
+  # FrankenPHP prod & environnement de dev, no drift). On teste le contrat ET la prod.
   backend:
-    name: Backend quality
+    name: Backend quality (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ["8.4", "8.5"]
 
     # PostgreSQL pour les tests d'intégration ET la mécanique de migration.
     services:
@@ -42,10 +48,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup PHP 8.5
+      - name: Setup PHP ${{ matrix.php }}
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.5"
+          php-version: ${{ matrix.php }}
           extensions: pdo_pgsql, intl, opcache, apcu, ctype, iconv
           coverage: none
           tools: composer
