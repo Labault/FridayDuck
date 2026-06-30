@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/FrankenPHP-worker_mode-08A36F" alt="FrankenPHP worker mode">
   <img src="https://img.shields.io/badge/PostgreSQL-Doctrine_ORM-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/PHPStan-level_9-2563EB" alt="PHPStan level 9">
-  <img src="https://img.shields.io/badge/license-see_LICENSE-555" alt="License">
+  <img src="https://img.shields.io/badge/license-All_rights_reserved-555" alt="License">
 </p>
 
 <p align="center">
@@ -279,4 +279,4 @@ serious parts.
 
 ## License
 
-See [LICENSE](LICENSE).
+Proprietary. All rights reserved. See [LICENSE](LICENSE).

@@ -2,6 +2,7 @@
   "name": "friday-duck-assets",
   "type": "module",
   "private": true,
+  "license": "UNLICENSED",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
