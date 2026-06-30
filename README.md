@@ -11,6 +11,13 @@
   <img src="https://img.shields.io/badge/license-see_LICENSE-555" alt="License">
 </p>
 
+<p align="center">
+  <a href="https://github.com/Labault/FridayDuck/actions/workflows/ci.yml"><img src="https://github.com/Labault/FridayDuck/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/Labault/FridayDuck/actions/workflows/e2e.yml"><img src="https://github.com/Labault/FridayDuck/actions/workflows/e2e.yml/badge.svg" alt="E2E"></a>
+  <a href="https://github.com/Labault/FridayDuck/actions/workflows/php.yml"><img src="https://github.com/Labault/FridayDuck/actions/workflows/php.yml/badge.svg" alt="PHP"></a>
+  <a href="https://github.com/Labault/FridayDuck/actions/workflows/security.yml"><img src="https://github.com/Labault/FridayDuck/actions/workflows/security.yml/badge.svg" alt="Security"></a>
+</p>
+
 > **Principle: the joke is the product, the rigor is the code.** The app is
 > deliberately useless. Its execution is not.
 
