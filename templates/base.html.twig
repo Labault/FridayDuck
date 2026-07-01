@@ -15,6 +15,10 @@
             {{ vite_entry_script_tags('app') }}
         {% endblock %}
 
+        {% if app.environment == 'prod' %}
+        <script defer src="https://stats.labault.dev/labault.js" data-website-id="676c5155-149b-46f4-86db-b114b7feba26"></script>
+        {% endif %}
+
         {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
         {% if frankenphpHotReload %}
         <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
