@@ -33,6 +33,9 @@ RUN npm run build
 
 FROM dunglas/frankenphp:1-php8.5 AS frankenphp_upstream
 
+# CVE-2026-109618 / CVE-2026-109619: refuse a vulnerable cached or upstream base.
+RUN php -r 'if (PHP_VERSION_ID < 80512) { fwrite(STDERR, "PHP >= 8.5.12 required (CVE-2026-109618, CVE-2026-109619)\n"); exit(1); }'
+
 # ─── Base ────────────────────────────────────────────────────────────────────
 FROM frankenphp_upstream AS frankenphp_base
 
@@ -71,7 +74,7 @@ ENTRYPOINT ["docker-entrypoint"]
 # Health check d'infrastructure : l'endpoint d'admin Caddy (port 2019) répond
 # dès que le serveur applicatif est debout. La sonde métier /health (app + base)
 # est servie séparément par l'application (§31.4, Presentation/Http).
-HEALTHCHECK --start-period=60s CMD php -r 'exit(false === @file_get_contents("http://localhost:2019/metrics", context: stream_context_create(["http" => ["timeout" => 5]])) ? 1 : 0);'
+HEALTHCHECK --start-period=60s CMD ["php", "-r", "exit(false === @file_get_contents(\"http://localhost:2019/metrics\", context: stream_context_create([\"http\" => [\"timeout\" => 5]])) ? 1 : 0);"]
 CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]
 
 # ─── Dev ─────────────────────────────────────────────────────────────────────
@@ -180,17 +183,16 @@ EOF
 # repose UNIQUEMENT sur le sysctl net.ipv4.ip_unprivileged_port_start. (« Pas de
 # setcap » visait l'AJOUT d'une cap ; ici on en SUPPRIME une — même intention :
 # aucune capability sur l'app.)
-RUN setcap -r /usr/local/bin/frankenphp
-
 # Chemins écrits au RUNTIME par les services SANS read-only (worker, relay) :
 #   var/share — pool cache.app (FilesystemAdapter, ex. Scheduler) ;
 #   var/log   — inutilisé en prod (logs → stderr), aligné par sûreté.
 # var/cache reste root + lecture seule (cache chaud baké, immuable par design).
 # Le service `app` (read-only) reçoit var/share, /data et /config en tmpfs
 # inscriptibles (mode=1777) — cf. compose.prod.yaml.
-RUN chown -R www-data:www-data var/log var/share
+RUN setcap -r /usr/local/bin/frankenphp \
+	&& chown -R www-data:www-data var/log var/share
 
-USER www-data
+USER 33
 
 # Version exposée (/health, Grafana). PLACÉE EN DERNIER À DESSEIN : elle change à
 # chaque commit ; la garder ici évite d'invalider les couches coûteuses (vendors,

@@ -1,5 +1,14 @@
 # Déploiement
 
+## Correctif PHP critique du 21 octobre 2026
+
+Le runtime doit exécuter PHP **8.5.12 ou supérieur dans la même branche mineure**
+pour corriger CVE-2026-109618 et CVE-2026-109619. La construction refuse une base
+plus ancienne. Après disponibilité du correctif dans l’image officielle, récupérer
+la base avec `--pull` et actualiser son digest lorsqu’il est épinglé. Vérifier la
+version exécutée dans chaque conteneur web et processus de fond après remplacement.
+Une construction refusée ou un tag actualisé ne prouve pas une production corrigée.
+
 > Référence faisant foi : [cahier des charges](cdc_friday_duck.md) (§31, §37.4).
 > Mise en ligne applicative (Phase 9). Le durcissement défensif (non-root, base
 > minimale) et le déploiement de l'observabilité sur le VPS suivent.
