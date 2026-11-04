@@ -84,7 +84,7 @@ fi
 
 # ── 2. Build de l'image prod (assets compilés + config env figée) ─────────────
 log "Build de l'image de production…"
-compose build --build-arg APP_VERSION="$APP_VERSION" app
+compose build --pull --build-arg APP_VERSION="$APP_VERSION" app
 
 # ── 3. Migrations Doctrine — GATE explicite, AVANT la mise en service ─────────
 # Conteneur jetable, --no-deps (la base tourne déjà), --all-or-nothing :

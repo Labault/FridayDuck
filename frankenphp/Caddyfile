@@ -30,6 +30,7 @@
 	# Le diagramme §21 dessine le hub à part, mais il tourne ici, dans le même
 	# binaire FrankenPHP/Caddy : AUCUN conteneur Mercure dédié.
 	mercure {
+		protocol_version_compatibility 8
 		# Publisher : protégé par JWT (seule l'app Symfony, qui signe avec
 		# MERCURE_JWT_SECRET, peut publier).
 		publisher_jwt {env.MERCURE_PUBLISHER_JWT_KEY} {env.MERCURE_PUBLISHER_JWT_ALG}

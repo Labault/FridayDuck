@@ -31,7 +31,11 @@ COPY --link assets ./assets
 COPY --link vite.config.ts tsconfig.json ./
 RUN npm run build
 
-FROM dunglas/frankenphp:1-php8.5 AS frankenphp_upstream
+FROM dunglas/frankenphp:1-php8.5@sha256:6f86f003f1478bafa7befe6ec26db5575e703882171f785189de1e222df0e38e AS frankenphp_upstream
+
+# CVE-2026-109618 / CVE-2026-109619: reject a vulnerable PHP base.
+RUN php -r 'if (PHP_VERSION_ID < 80512) { fwrite(STDERR, "PHP >= 8.5.12 required (CVE-2026-109618, CVE-2026-109619)\n"); exit(1); }' \
+	&& printf 'session.upload_progress.enabled=0\n' > /usr/local/etc/php/conf.d/zz-php-security.ini
 
 # ─── Base ────────────────────────────────────────────────────────────────────
 FROM frankenphp_upstream AS frankenphp_base
@@ -71,7 +75,7 @@ ENTRYPOINT ["docker-entrypoint"]
 # Health check d'infrastructure : l'endpoint d'admin Caddy (port 2019) répond
 # dès que le serveur applicatif est debout. La sonde métier /health (app + base)
 # est servie séparément par l'application (§31.4, Presentation/Http).
-HEALTHCHECK --start-period=60s CMD php -r 'exit(false === @file_get_contents("http://localhost:2019/metrics", context: stream_context_create(["http" => ["timeout" => 5]])) ? 1 : 0);'
+HEALTHCHECK --start-period=60s CMD ["php", "-r", "exit(false === @file_get_contents(\"http://localhost:2019/metrics\", context: stream_context_create([\"http\" => [\"timeout\" => 5]])) ? 1 : 0);"]
 CMD ["frankenphp", "run", "--config", "/etc/frankenphp/Caddyfile"]
 
 # ─── Dev ─────────────────────────────────────────────────────────────────────

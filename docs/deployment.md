@@ -175,3 +175,28 @@ redéploie), mais le retag d'image est le chemin le plus court.
       [`ops/backup/README.md`](../ops/backup/README.md) (installation/wiring) et
       [`docs/runbook-backup.md`](runbook-backup.md) (restauration). Le dump
       pré-migration de `deploy.sh` reste le filet de rollback LOCAL, distinct.
+
+## Sécurité du moteur PHP
+
+Les images sont épinglées par digest et exigent PHP **8.5.12 minimum dans la
+branche mineure retenue** pour corriger CVE-2026-109618 et CVE-2026-109619.
+Une base plus ancienne fait échouer la construction. Le suivi natif des uploads
+est désactivé (`session.upload_progress.enabled=0`), conformément à l’avis
+complémentaire sur CVE-2026-115560. Les uploads applicatifs restent disponibles.
+
+Avant une livraison autorisée, reconstruire les images avec les bases corrigées
+et exécuter les contrôles du projet. Après remplacement, vérifier `PHP_VERSION`
+et `ini_get('session.upload_progress.enabled')` dans chaque conteneur web et
+processus de fond ; le réglage doit être désactivé. Pour FrankenPHP, contrôler
+aussi le moteur intégré avec `frankenphp php-cli`. Vérifier ensuite les contrôles
+de santé documentés. Un build réussi ne prouve pas une production corrigée.
+
+FrankenPHP 1.13.4 embarque Mercure 1.x. La configuration conserve explicitement
+le protocole applicatif 0.x avec `protocol_version_compatibility 8` ; vérifier
+le démarrage du serveur puis une publication et sa réception avant livraison.
+
+[Avis PHP](https://www.php.net/archive/2026.php).
+
+Les prochains correctifs demandent une actualisation du digest : `build --pull`
+ne change pas une référence épinglée. Le suivi Docker de Dependabot n’est pas
+configuré dans ce dépôt ; cette actualisation reste manuelle.
